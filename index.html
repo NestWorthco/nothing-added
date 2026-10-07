@@ -1,0 +1,1523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nothing Added</title>
+<meta name="description" content="Scan a food label or barcode to see how processed it is, what it costs your life, and log what you eat.">
+<meta name="theme-color" content="#2e5b38">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nothing Added">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font: 14px/1.5 system-ui, sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script>
+<style>
+/* Layout: one narrow column; the result is drawn like a nutrition panel — heavy rules, condensed caps, tabular figures. */
+:root {
+  --paper: #f4f5f0;
+  --surface: #ffffff;
+  --ink: #15180f;
+  --muted: #5b6153;
+  --line: #d7dacf;
+  --accent: #2e5b38;
+  --accent-ink: #ffffff;
+  --t1: #1d7438; --t2: #5a942b; --t3: #b88d0c; --t4: #cc611a; --t5: #bd3128;
+  --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11130e; --surface: #1a1d16; --ink: #eceee6; --muted: #9da393; --line: #30352a;
+    --accent: #8fc79b; --accent-ink: #11130e;
+    --t1: #4cba6b; --t2: #93c95a; --t3: #e2b93a; --t4: #ee8a45; --t5: #f0675c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11130e; --surface: #1a1d16; --ink: #eceee6; --muted: #9da393; --line: #30352a;
+  --accent: #8fc79b; --accent-ink: #11130e;
+  --t1: #4cba6b; --t2: #93c95a; --t3: #e2b93a; --t4: #ee8a45; --t5: #f0675c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.55 var(--body); padding-inline: 16px; padding-block: 20px calc(96px + env(safe-area-inset-bottom, 0px)); -webkit-tap-highlight-color: transparent; }
+button, label, select, a { touch-action: manipulation; }
+@media (pointer: coarse) { input, textarea, select { font-size: 16px !important; } }
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+header { display: grid; gap: 6px; }
+h1 { font-size: clamp(36px, 9vw, 56px); font-weight: 900; font-stretch: 70%; letter-spacing: -0.01em; line-height: 0.95; text-transform: uppercase; }
+header p { margin: 0; color: var(--muted); max-width: 60ch; }
+.eyebrow { font-family: var(--display); font-stretch: 85%; font-weight: 700; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+/* Input */
+.input { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 14px; }
+.tabs { display: flex; gap: 4px; background: var(--paper); padding: 4px; border-radius: 8px; width: fit-content; }
+.tabs button { border: 0; background: transparent; color: var(--muted); font: 600 14px var(--body); padding: 7px 14px; border-radius: 6px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 0.12); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { appearance: none; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font: 600 14px var(--body); padding: 10px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn:focus-visible, .tabs button:focus-visible, textarea:focus-visible, input:focus-visible, .chip:focus-visible, .hist button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn input { display: none; }
+textarea, .nip-in input { width: 100%; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 8px; padding: 10px 12px; font: 14px/1.5 var(--mono); }
+textarea { min-height: 110px; resize: vertical; }
+label.small { font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+.nip-in { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; }
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+.thumbs img { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+.status { font-size: 14px; color: var(--muted); min-height: 1.4em; margin: 0; }
+.status.err { color: var(--t5); }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 5px 12px; font: 13px var(--body); cursor: pointer; }
+.chip:hover { border-color: var(--ink); }
+
+/* Result panel */
+.panel { background: var(--surface); border: 2px solid var(--ink); padding: 18px 18px 20px; display: grid; gap: 18px; }
+.panel-head { display: grid; gap: 4px; border-bottom: 10px solid var(--ink); padding-bottom: 12px; }
+.panel-head .eyebrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tag-example { background: var(--ink); color: var(--surface); padding: 1px 7px; border-radius: 3px; letter-spacing: 0.08em; }
+.panel h2 { font-size: clamp(26px, 6vw, 36px); font-weight: 800; font-stretch: 75%; line-height: 1.05; }
+.verdict { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; }
+.score { font-family: var(--display); font-weight: 900; font-stretch: 70%; font-size: 72px; line-height: 0.85; font-variant-numeric: tabular-nums; color: var(--tier); }
+.score small { display: block; font-size: 12px; font-weight: 700; font-stretch: 85%; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-top: 6px; }
+.verdict h3 { font-size: 26px; font-weight: 800; font-stretch: 80%; text-transform: uppercase; color: var(--tier); line-height: 1; }
+.verdict p { margin: 4px 0 0; color: var(--ink); max-width: 52ch; }
+.punch { font-family: var(--display); font-weight: 900; font-stretch: 72%; text-transform: uppercase; line-height: 0.98; font-size: clamp(30px, 7.5vw, 46px); color: var(--tier); margin: 0; text-wrap: balance; }
+.punch + p { margin: 0; font-size: 16px; max-width: 58ch; }
+.panel.t5 { border-color: var(--t5); box-shadow: 0 0 0 4px color-mix(in srgb, var(--t5) 22%, transparent); }
+.panel.t5 .panel-head { border-bottom-color: var(--t5); }
+.evidence { background: color-mix(in srgb, var(--tier) 10%, var(--surface)); border-left: 4px solid var(--tier); padding: 12px 14px; display: grid; gap: 6px; }
+.evidence ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.evidence .src { font-size: 12px; color: var(--muted); }
+.life { border: 2px solid var(--tier); padding: 14px 16px; display: grid; gap: 10px; }
+.life .big { font-family: var(--display); font-weight: 900; font-stretch: 70%; font-size: clamp(54px, 15vw, 88px); line-height: 0.85; color: var(--tier); font-variant-numeric: tabular-nums; }
+.life .big small { font-size: 0.42em; font-stretch: 80%; margin-left: 6px; }
+.life .sub { font-size: 15px; margin: 0; }
+.life .ctl { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 14px; }
+.life select, .life input[type=range] { accent-color: var(--tier); }
+.life select { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 6px; padding: 5px 8px; font: 14px var(--body); }
+.life .facts { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--muted); }
+.life .facts b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.life details { border: 0; padding: 0; background: transparent; font-size: 13px; color: var(--muted); }
+.life details summary { font-weight: 500; }
+.life details p { margin: 6px 0 0; font-size: 13px; }
+/* App-style tab bar pinned to the bottom of the screen */
+.nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; justify-content: center; gap: 0; background: var(--surface); border-top: 2px solid var(--ink); padding: 6px 16px calc(6px + env(safe-area-inset-bottom, 0px)); }
+.nav button { flex: 1 1 0; max-width: 220px; border: 0; background: transparent; color: var(--muted); font: 800 13px var(--display); font-stretch: 85%; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 8px; cursor: pointer; display: grid; justify-items: center; gap: 2px; border-radius: 8px; }
+.nav button svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.nav button[aria-selected="true"] { color: var(--ink); }
+.nav button[aria-selected="true"] svg { stroke: var(--accent); }
+.nav button:focus-visible { outline: 2px solid var(--accent); }
+.bigscan { width: 100%; justify-content: center; font-size: 17px; padding: 16px; border-radius: 12px; }
+.scanbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 360px) { .scanbtns { grid-template-columns: 1fr; } }
+.bigscan.alt { background: var(--surface); }
+.barcode { font-size: 14px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; line-height: 1.5; }
+.barcode a { color: var(--accent); }
+.bigscan svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.view { display: grid; gap: 28px; }
+.logit { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-top: 2px solid var(--ink); padding-top: 12px; }
+.logit input, .add input, .add select, .targets input { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 8px; padding: 9px 10px; font: 14px var(--body); }
+.logit input { width: 90px; }
+.daybar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.daybar h2 { font-size: 28px; font-weight: 900; font-stretch: 72%; text-transform: uppercase; }
+.daybar .btn { padding: 6px 12px; }
+.today { background: var(--surface); border: 2px solid var(--ink); padding: 16px 18px; display: grid; gap: 16px; }
+.today.bad { border-color: var(--t5); }
+.cost { display: grid; gap: 4px; }
+.cost .big { font-family: var(--display); font-weight: 900; font-stretch: 70%; font-size: clamp(50px, 14vw, 80px); line-height: 0.85; font-variant-numeric: tabular-nums; color: var(--tier); }
+.cost .big small { font-size: 0.4em; margin-left: 6px; }
+.cost p { margin: 0; font-size: 15px; max-width: 56ch; }
+.share { display: grid; gap: 6px; }
+.share .track { display: flex; height: 14px; border-radius: 3px; overflow: hidden; background: var(--line); }
+.share .track span { display: block; height: 100%; }
+.share .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
+.share .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 110px 1fr 130px; gap: 10px; align-items: center; font-size: 14px; }
+.bar-row .track { height: 10px; background: var(--line); border-radius: 2px; position: relative; overflow: hidden; }
+.bar-row .track span { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--c); }
+.bar-row .v { text-align: right; font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar-row .v b { font-family: var(--body); font-weight: 700; }
+.ok { --c: var(--t1); } .warn { --c: var(--t3); } .over { --c: var(--t5); } .prog { --c: var(--accent); }
+.bar-row.over .v b { color: var(--t5); }
+.entries { list-style: none; margin: 0; padding: 0; display: grid; }
+.entries li { display: grid; grid-template-columns: 30px 1fr auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.entries .tb { font-family: var(--display); font-weight: 900; font-stretch: 75%; font-size: 15px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--surface); background: var(--tier); }
+.entries .nm { min-width: 0; }
+.entries .nm small { display: block; color: var(--muted); font-size: 12.5px; }
+.entries .min { font-family: var(--mono); font-size: 12.5px; color: var(--t5); white-space: nowrap; }
+.entries .del { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 18px; padding: 2px 6px; border-radius: 4px; }
+.entries .del:hover { color: var(--t5); }
+.add { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; }
+.add .row input[type=text] { flex: 1 1 220px; min-width: 0; }
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; height: 130px; }
+.week .col { font-size: 11.5px; color: var(--muted); min-width: 0; }
+.week .col button { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; width: 100%; border-radius: 4px; }
+.week .col button:focus-visible { outline: 2px solid var(--accent); }
+.week .col .b { width: 70%; max-width: 34px; background: var(--t5); border-radius: 3px 3px 0 0; }
+.week .col .b.zero { background: var(--t1); }
+.week .col.sel { color: var(--ink); font-weight: 700; }
+.week .col .n { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.targets { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+.targets label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.targets input { width: 100%; }
+.empty { color: var(--muted); font-size: 14px; margin: 0; }
+@media (max-width: 480px) { .bar-row { grid-template-columns: 92px 1fr 96px; gap: 8px; font-size: 13px; } .bar-row .w { display: none; } }
+.tone { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.tone .tabs { margin: 0; }
+.tone .tabs button { padding: 4px 10px; font-size: 13px; }
+.ladder { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+.ladder div { display: grid; gap: 6px; font-size: 11.5px; line-height: 1.25; color: var(--muted); }
+.ladder span.bar { height: 10px; background: var(--line); border-radius: 2px; }
+.ladder div.on { color: var(--ink); font-weight: 600; }
+.ladder div.on span.bar { background: var(--tier); height: 16px; margin-top: -6px; }
+.ladder b { font-family: var(--display); font-stretch: 80%; font-size: 13px; display: block; color: inherit; }
+.sect { display: grid; gap: 10px; border-top: 2px solid var(--ink); padding-top: 10px; }
+.sect h4 { margin: 0; font-family: var(--display); font-weight: 800; font-stretch: 80%; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
+.ings { list-style: none; margin: 0; padding: 0; display: grid; }
+.ings li { display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.ings li:last-child { border-bottom: 0; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--k); transform: translateY(1px); }
+.ings .nm { min-width: 0; }
+.ings .nm small { display: block; color: var(--muted); font-size: 12.5px; }
+.ings .kind { font-size: 12px; color: var(--k); font-weight: 600; white-space: nowrap; }
+.code { font-family: var(--mono); font-size: 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 4px; }
+.k-whole { --k: var(--t1); } .k-culinary { --k: var(--t3); } .k-fortificant { --k: var(--t2); }
+.k-refined { --k: var(--t4); } .k-additive_mild { --k: var(--t4); } .k-additive_cosmetic { --k: var(--t5); }
+.checks { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.nip { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.nip th, .nip td { text-align: left; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.nip th { font-weight: 500; }
+.nip td { text-align: right; font-family: var(--mono); }
+.nip td.lvl { width: 76px; font-family: var(--body); }
+.lvl span { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; color: var(--surface); }
+.lvl .lo { background: var(--t1); } .lvl .md { background: var(--t3); } .lvl .hi { background: var(--t5); }
+.counts { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.counts span { display: inline-flex; gap: 6px; align-items: center; }
+
+/* History + guide */
+.hist { display: grid; gap: 6px; }
+.hist button { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; color: var(--ink); font: 14px var(--body); cursor: pointer; }
+.hist button:hover { border-color: var(--ink); }
+.hist .s { font-family: var(--display); font-weight: 900; font-stretch: 70%; font-size: 24px; color: var(--tier); font-variant-numeric: tabular-nums; }
+.hist .t { font-size: 12px; color: var(--muted); }
+.hist .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+details summary { cursor: pointer; font-weight: 600; }
+details ol { padding-left: 20px; display: grid; gap: 8px; margin: 12px 0 4px; }
+details p { color: var(--muted); font-size: 14px; }
+@media (prefers-reduced-motion: no-preference) { .ladder span.bar { transition: background 0.3s, height 0.3s; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Label scanner · NZ &amp; AU packaging</span>
+    <h1>Nothing Added</h1>
+    <p>Photograph the ingredients list and the nutrition information panel. You'll see how close the product is to its raw ingredients, and exactly what's been added.</p>
+    <div class="tone"><span>Tone</span><div class="tabs" role="group" aria-label="Tone">
+      <button id="tone-blunt" aria-selected="true">Brutal</button><button id="tone-calm" aria-selected="false">Calm</button>
+    </div></div>
+  </header>
+
+  <nav class="nav" role="tablist" aria-label="Sections">
+    <button id="nav-scan" role="tab" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V6a2 2 0 0 1 2-2h2M17 4h2a2 2 0 0 1 2 2v2M21 16v2a2 2 0 0 1-2 2h-2M7 20H5a2 2 0 0 1-2-2v-2"/><path d="M7 9h10M7 12h10M7 15h6"/></svg>Scan</button>
+    <button id="nav-log" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Today's log</button>
+  </nav>
+
+  <div id="view-scan" class="view">
+  <section class="input" aria-label="Scan a label">
+    <div class="tabs" role="tablist">
+      <button id="tab-photo" role="tab" aria-selected="true">Photo</button>
+      <button id="tab-text" role="tab" aria-selected="false">Type or paste</button>
+    </div>
+
+    <div id="pane-photo" class="pane" style="display:grid;gap:12px">
+      <div class="scanbtns">
+        <label class="btn primary bigscan" for="cam-bc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M15.5 8v8M17.5 8v8"/></svg>Scan barcode<input id="cam-bc" type="file" accept="image/*" capture="environment"></label>
+        <label class="btn bigscan alt" for="cam"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>Photograph label<input id="cam" type="file" accept="image/*" capture="environment"></label>
+      </div>
+      <p class="hint">Scan the barcode to bring up anything you've checked before. For a new product, photograph the ingredients and the nutrition panel (up to 3 photos), then tap Read label.</p>
+      <div class="row">
+        <label class="btn" for="pick">Photo library<input id="pick" type="file" accept="image/*" multiple></label>
+        <button id="clear-photos" class="btn" hidden>Clear</button>
+      </div>
+      <div id="barcode-box" class="barcode" hidden></div>
+      <div id="thumbs" class="thumbs"></div>
+      <div class="row" id="read-row" hidden>
+        <button id="scan" class="btn primary bigscan" disabled>Read label</button>
+        <button id="stop" class="btn" hidden>Stop</button>
+      </div>
+      <p id="reader-note" class="hint">Text is read on your phone. Check the result against the pack.</p>
+    </div>
+
+    <div id="pane-text" class="pane" style="display:none;gap:12px">
+      <label class="small" for="ing">Ingredients, as printed
+        <textarea id="ing" placeholder="e.g. Wheat flour, sugar, vegetable oil (palm), emulsifier (soy lecithin, 476), raising agents (500, 450), salt, flavour."></textarea>
+      </label>
+      <label class="small" for="pname">Product name (optional)
+        <input id="pname" type="text" style="width:100%;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:10px 12px;font:14px var(--body)">
+      </label>
+      <span class="hint">Nutrition per 100 g, from the NIP (optional)</span>
+      <div class="nip-in">
+        <label class="small" for="n-kj">Energy kJ<input id="n-kj" inputmode="decimal"></label>
+        <label class="small" for="n-pro">Protein g<input id="n-pro" inputmode="decimal"></label>
+        <label class="small" for="n-fat">Fat g<input id="n-fat" inputmode="decimal"></label>
+        <label class="small" for="n-sat">Sat. fat g<input id="n-sat" inputmode="decimal"></label>
+        <label class="small" for="n-carb">Carbs g<input id="n-carb" inputmode="decimal"></label>
+        <label class="small" for="n-sug">Sugars g<input id="n-sug" inputmode="decimal"></label>
+        <label class="small" for="n-fib">Fibre g<input id="n-fib" inputmode="decimal"></label>
+        <label class="small" for="n-na">Sodium mg<input id="n-na" inputmode="decimal"></label>
+        <label class="small" for="n-serve">Serving size g<input id="n-serve" inputmode="decimal"></label>
+      </div>
+      <div class="row"><button id="check" class="btn primary">Check ingredients</button></div>
+    </div>
+
+    <p id="status" class="status" role="status"></p>
+    <div class="examples"><span class="hint">Try an example:</span></div>
+  </section>
+
+  <section id="result" aria-live="polite"></section>
+
+  <section id="history-wrap" hidden style="display:grid;gap:10px">
+    <span class="eyebrow">Your recent scans · kept on this device</span>
+    <div id="history" class="hist"></div>
+  </section>
+
+  <details>
+    <summary>How the scale works</summary>
+    <ol>
+      <li><b>Single ingredient.</b> One thing, nothing else. 100% cocoa, plain rolled oats, frozen peas.</li>
+      <li><b>Whole foods only.</b> Several whole ingredients, none refined or added. Muesli of oats, nuts and dried fruit.</li>
+      <li><b>Kitchen-made.</b> Whole foods plus staples you'd add at home: salt, sugar, oil, butter, vinegar, honey.</li>
+      <li><b>Processed.</b> Contains refined or extracted ingredients (white flour, syrups, milk solids, isolates) or functional additives with a code number.</li>
+      <li><b>Ultra-processed.</b> Contains cosmetic additives: emulsifiers, thickeners, flavours, colours, sweeteners, flavour enhancers, modified starch, or a long list of additives.</li>
+    </ol>
+    <p>The purity score (0–100) ranks products within each step: fewer and gentler additions score higher. Additive numbers on NZ and AU labels are International Numbering System (INS) codes, the same as E-numbers without the E. Ingredients are listed by weight, heaviest first. NIP levels use per-100g food thresholds: sugars over 22.5 g is high and 5 g or under is low; sodium over 600 mg is high and 120 mg or under is low.</p>
+  </details>
+  </div>
+
+  <div id="view-log" class="view" hidden>
+    <div class="daybar">
+      <button id="day-prev" class="btn" aria-label="Previous day">‹</button>
+      <h2 id="day-title">Today</h2>
+      <button id="day-next" class="btn" aria-label="Next day">›</button>
+    </div>
+    <section id="today" class="today" aria-live="polite"><p class="empty">Loading your log…</p></section>
+
+    <section class="add" aria-label="Add food">
+      <span class="eyebrow">Add food without a label</span>
+      <p class="hint" id="add-hint">Describe what you ate, with amounts if you know them. Claude estimates the nutrition. To log packaged food, scan it and tap "Add to today's log".</p>
+      <div class="row">
+        <input id="add-text" type="text" placeholder="e.g. 2 boiled eggs and a banana">
+        <button id="add-go" class="btn primary">Add</button>
+      </div>
+      <div class="row" id="add-manual" hidden>
+        <input id="add-grams" type="number" inputmode="decimal" placeholder="grams" style="width:100px">
+        <select id="add-tier" aria-label="Processing step">
+          <option value="1">1 · Single ingredient</option><option value="2">2 · Whole foods</option><option value="3">3 · Kitchen-made</option><option value="4">4 · Processed</option><option value="5">5 · Ultra-processed</option>
+        </select>
+      </div>
+      <p id="add-status" class="status" role="status"></p>
+    </section>
+
+    <section style="display:grid;gap:10px">
+      <span class="eyebrow">Last 7 days · minutes of life lost to ultra-processed food</span>
+      <div id="week" class="week"></div>
+    </section>
+
+    <details>
+      <summary>Daily targets</summary>
+      <p>Defaults are the Daily Intake values behind the %DI on NZ and AU labels (Food Standards Code 1.2.8), based on an average adult eating 8,700 kJ a day. Protein and fibre are goals to reach. Fat, saturated fat, sugars and sodium are limits to stay under. Change them to suit you.</p>
+      <div id="targets" class="targets"></div>
+      <div class="row" style="margin-top:10px"><button id="targets-reset" class="btn">Reset to label values</button></div>
+    </details>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- Reference data ----------
+  const TIERS = [
+    null,
+    { name: "Single ingredient", short: "Single", band: [92, 100], blurb: "One raw ingredient and nothing else. This is the product in its own form." },
+    { name: "Whole foods only", short: "Whole", band: [80, 91], blurb: "A mix of whole ingredients with nothing refined or added." },
+    { name: "Kitchen-made", short: "Kitchen", band: [60, 79], blurb: "Whole foods plus staples you'd use at home, like salt, sugar or oil." },
+    { name: "Processed", short: "Processed", band: [32, 59], blurb: "Contains refined or extracted ingredients, or additives that do a job in the factory." },
+    { name: "Ultra-processed", short: "Ultra", band: [0, 31], blurb: "Contains cosmetic additives that change texture, taste, colour or shelf life." },
+  ];
+  // Brutal tone. Every claim about harm is about a diet built on food like this, as the research measured it.
+  const BLUNT = [null,
+    { punch: "This is food. Eat it.", line: "One ingredient. Nothing hidden, nothing added, nothing to forgive. This is what your body was built to run on." },
+    { punch: "Real food. Your body knows what to do with this.", line: "Every ingredient grew, swam or walked. No factory decided how this should taste." },
+    { punch: "Fine. But read the sugar, salt and oil.", line: "This is what a kitchen makes. A little is food. Every day, the sugar and salt add up quietly, year after year." },
+    { punch: "Your body is paying for this convenience.", line: "Stripped, refined and engineered to last on a shelf. The fibre and nutrients that protect you were taken out in a factory, and some of what replaced them exists only to make it cheaper." },
+    { punch: "This is slowly shortening your life.", line: "This isn't really food. It's a product engineered so you can't stop at one. Eaten every day, food like this is linked to dying younger: from heart disease, from diabetes. It does it quietly, one ordinary day at a time." },
+  ];
+  const EVIDENCE = {
+    5: { head: "What eating like this does to people", items: [
+      "21% higher risk of dying from any cause for people who eat the most ultra-processed food, and about 50% higher risk of dying from heart disease.",
+      "Up to 53% higher risk of anxiety and common mental disorders, and 12% higher risk of type 2 diabetes.",
+      "Each extra daily serving was linked to an 18% higher risk of death in a Spanish cohort of nearly 20,000 people.",
+      "In a controlled trial, people ate about 500 extra calories a day on an ultra-processed diet without noticing, and gained weight in two weeks.",
+    ], src: "Lane et al., BMJ 2024 (umbrella review, ~10 million people) · Rico-Campà et al., BMJ 2019 · Hall et al., Cell Metabolism 2019" },
+    4: { head: "Why it matters", items: [
+      "Refining strips out fibre, which slows sugar into your blood and feeds the gut bacteria that protect you.",
+      "Refined starches and syrups hit your bloodstream fast. Over years, that's the road to insulin resistance and type 2 diabetes.",
+    ], src: "Processing removes the parts of the plant your body needs most." },
+  };
+  // ---------- Life cost ----------
+  // Rico-Campà et al. (BMJ 2019): each extra daily serving of ultra-processed food → 18% higher risk of death.
+  // A constant hazard ratio shifts life expectancy by about ln(HR)/b, where b ≈ 0.09/yr is the Gompertz rate at
+  // which adult death risk rises with age. ln(1.18)/0.09 ≈ 1.8 years for one serving a day across ~50 adult years
+  // (~18,000 servings) ≈ 53 minutes per serving. Rounded to 50.
+  const MIN_PER_SERVING = 50;
+  let lifeFreq = 7, lifeYears = 10;
+  try { lifeFreq = +localStorage.getItem("na-freq") || 7; lifeYears = +localStorage.getItem("na-years") || 10; } catch {}
+  function lifeDays(freq, years) { return MIN_PER_SERVING * freq / 7 * 365.25 * years / 1440; }
+  function fmtLife(days) {
+    if (days >= 365) return [(Math.round(days / 36.5) / 10).toString(), days >= 730 ? "years" : "year"];
+    if (days >= 1) return [Math.round(days).toString(), Math.round(days) === 1 ? "day" : "days"];
+    return [Math.round(days * 24).toString(), "hours"];
+  }
+  function fmtMins(m) { return m >= 90 ? (Math.round(m / 6) / 10) + " hours" : Math.round(m) + " minutes"; }
+  function lifeHTML(r) {
+    if (r.tier === 5) {
+      const [n, u] = fmtLife(lifeDays(lifeFreq, lifeYears));
+      const sv = r.nip?.servings;
+      return `<div class="life" id="life">
+        <span class="eyebrow">${tone === "blunt" ? "What this costs you" : "Estimated life cost"}</span>
+        <div class="big" id="life-big">−${n}<small>${u}</small></div>
+        <p class="sub" id="life-sub">${tone === "blunt" ? "of your life" : "of life expectancy"}, eating this ${freqWord(lifeFreq)} for ${lifeYears} year${lifeYears > 1 ? "s" : ""}.</p>
+        <div class="ctl">
+          <label for="life-freq">Eat it <select id="life-freq">
+            ${[[7,"every day"],[3,"3 times a week"],[1,"once a week"]].map(([v,l]) => `<option value="${v}" ${v === lifeFreq ? "selected" : ""}>${l}</option>`).join("")}
+          </select></label>
+          <label for="life-years" style="display:flex;gap:8px;align-items:center">for <input id="life-years" type="range" min="1" max="40" value="${lifeYears}"> <b id="life-years-out">${lifeYears} yr</b></label>
+        </div>
+        <div class="facts"><span>Each serving <b>≈ −${MIN_PER_SERVING} min</b></span>${sv ? `<span>This whole pack (${sv} serves) <b>≈ −${fmtMins(sv * MIN_PER_SERVING)}</b></span>` : ""}<span>Daily for a year <b>≈ −${Math.round(lifeDays(7, 1))} days</b></span></div>
+        <details><summary>Where this number comes from</summary>
+          <p>In a study of nearly 20,000 adults, each extra daily serving of ultra-processed food was linked to an 18% higher risk of death (Rico-Campà et al., BMJ 2019). Because the risk of dying roughly doubles every 8 years of adult life, an 18% higher risk works out to about 1.8 years less life for a lifelong daily serving, or about 50 minutes per serving. A separate University of Michigan study (Stylianou et al., Nature Food 2021) put a hot dog at 36 minutes, in the same range.</p>
+          <p>It's an average across many people, not a prediction for you, and it applies to ultra-processed food as a group rather than to this exact product.</p>
+        </details>
+      </div>`;
+    }
+    if (r.tier === 4) return `<div class="life" id="life"><span class="eyebrow">${tone === "blunt" ? "What this costs you" : "Estimated life cost"}</span>
+      <p class="sub"><b>Not counted, yet.</b> ${tone === "blunt" ? "The research can't put a reliable number of days on processed food the way it can for ultra-processed. That doesn't make it free: refined flour and syrups are how blood sugar problems start." : "Studies don't give a reliable life-expectancy figure for this level of processing."}</p></div>`;
+    return `<div class="life" id="life"><span class="eyebrow">${tone === "blunt" ? "What this costs you" : "Estimated life cost"}</span>
+      <div class="big">0<small>days</small></div>
+      <p class="sub">${tone === "blunt" ? "Nothing. People who eat mostly whole foods like this live longer." : "No life cost. Diets built on whole foods are linked to longer lives."}</p></div>`;
+  }
+  const freqWord = f => f === 7 ? "every day" : f === 3 ? "3 times a week" : "once a week";
+  function updateLife() {
+    const [n, u] = fmtLife(lifeDays(lifeFreq, lifeYears));
+    const big = document.getElementById("life-big"); if (!big) return;
+    big.innerHTML = `−${n}<small>${u}</small>`;
+    document.getElementById("life-years-out").textContent = lifeYears + " yr";
+    document.getElementById("life-sub").textContent = `${tone === "blunt" ? "of your life" : "of life expectancy"}, eating this ${freqWord(lifeFreq)} for ${lifeYears} year${lifeYears > 1 ? "s" : ""}.`;
+    try { localStorage.setItem("na-freq", lifeFreq); localStorage.setItem("na-years", lifeYears); } catch {}
+  }
+  document.addEventListener("input", e => {
+    if (e.target.id === "life-freq") { lifeFreq = +e.target.value; updateLife(); }
+    if (e.target.id === "life-years") { lifeYears = +e.target.value; updateLife(); }
+  });
+
+  const KIND_LABEL = {
+    whole: "Whole food", culinary: "Kitchen staple", fortificant: "Added nutrient",
+    refined: "Refined", additive_mild: "Additive", additive_cosmetic: "Cosmetic additive",
+  };
+  const KIND_RANK = { whole: 0, culinary: 1, fortificant: 2, refined: 3, additive_mild: 4, additive_cosmetic: 5 };
+
+  // Common INS codes on NZ/AU labels. c = cosmetic (texture/taste/colour), m = functional / low concern.
+  const INS = {
+    "100":["Curcumin","colour","c"],"101":["Riboflavin","colour","c"],"102":["Tartrazine","colour","c"],"110":["Sunset yellow","colour","c"],
+    "120":["Carmine","colour","c"],"122":["Azorubine","colour","c"],"129":["Allura red","colour","c"],"133":["Brilliant blue","colour","c"],
+    "150a":["Caramel I","colour","c"],"150c":["Caramel III","colour","c"],"150d":["Caramel IV","colour","c"],"160a":["Beta-carotene","colour","c"],
+    "160b":["Annatto","colour","c"],"160c":["Paprika extract","colour","c"],"162":["Beetroot red","colour","c"],"171":["Titanium dioxide","colour","c"],
+    "200":["Sorbic acid","preservative","c"],"202":["Potassium sorbate","preservative","c"],"211":["Sodium benzoate","preservative","c"],
+    "220":["Sulphur dioxide","preservative","c"],"223":["Sodium metabisulphite","preservative","c"],"224":["Potassium metabisulphite","preservative","c"],
+    "234":["Nisin","preservative","c"],"250":["Sodium nitrite","preservative","c"],"251":["Sodium nitrate","preservative","c"],
+    "260":["Acetic acid","food acid","m"],"262":["Sodium acetates","acidity regulator","m"],"270":["Lactic acid","food acid","m"],
+    "280":["Propionic acid","preservative","c"],"281":["Sodium propionate","preservative","c"],"282":["Calcium propionate","preservative","c"],
+    "290":["Carbon dioxide","gas","m"],"296":["Malic acid","food acid","m"],"297":["Fumaric acid","food acid","m"],
+    "300":["Ascorbic acid (vitamin C)","antioxidant","m"],"301":["Sodium ascorbate","antioxidant","m"],"304":["Ascorbyl palmitate","antioxidant","m"],
+    "306":["Tocopherols (vitamin E)","antioxidant","m"],"307":["Alpha-tocopherol","antioxidant","m"],"307b":["Tocopherols","antioxidant","m"],
+    "319":["TBHQ","antioxidant","c"],"320":["BHA","antioxidant","c"],"321":["BHT","antioxidant","c"],
+    "322":["Lecithin","emulsifier","c"],"325":["Sodium lactate","acidity regulator","m"],"327":["Calcium lactate","mineral salt","m"],
+    "330":["Citric acid","food acid","m"],"331":["Sodium citrates","acidity regulator","m"],"332":["Potassium citrates","acidity regulator","m"],
+    "333":["Calcium citrates","acidity regulator","m"],"334":["Tartaric acid","food acid","m"],"338":["Phosphoric acid","food acid","c"],
+    "339":["Sodium phosphates","mineral salt","c"],"340":["Potassium phosphates","mineral salt","c"],"341":["Calcium phosphates","mineral salt","c"],
+    "401":["Sodium alginate","thickener","c"],"406":["Agar","thickener","c"],"407":["Carrageenan","thickener","c"],"410":["Locust bean gum","thickener","c"],
+    "412":["Guar gum","thickener","c"],"414":["Gum arabic","thickener","c"],"415":["Xanthan gum","thickener","c"],"418":["Gellan gum","thickener","c"],
+    "420":["Sorbitol","humectant","c"],"422":["Glycerol","humectant","c"],"433":["Polysorbate 80","emulsifier","c"],"440":["Pectin","gelling agent","c"],
+    "450":["Diphosphates","raising agent","m"],"451":["Triphosphates","mineral salt","c"],"452":["Polyphosphates","mineral salt","c"],
+    "460":["Cellulose","anticaking agent","c"],"461":["Methyl cellulose","thickener","c"],"466":["Carboxymethylcellulose","thickener","c"],
+    "471":["Mono- and diglycerides","emulsifier","c"],"472e":["DATEM","emulsifier","c"],"475":["Polyglycerol esters","emulsifier","c"],
+    "476":["PGPR","emulsifier","c"],"481":["Sodium stearoyl lactylate","emulsifier","c"],"482":["Calcium stearoyl lactylate","emulsifier","c"],
+    "491":["Sorbitan monostearate","emulsifier","c"],
+    "500":["Sodium bicarbonate","raising agent","m"],"501":["Potassium carbonate (alkalising)","acidity regulator","m"],
+    "503":["Ammonium carbonate","raising agent","m"],"504":["Magnesium carbonate","anticaking agent","m"],"508":["Potassium chloride","mineral salt","m"],
+    "509":["Calcium chloride","firming agent","m"],"511":["Magnesium chloride","firming agent","m"],"516":["Calcium sulphate","firming agent","m"],
+    "524":["Sodium hydroxide","acidity regulator","m"],"541":["Sodium aluminium phosphate","raising agent","c"],"551":["Silicon dioxide","anticaking agent","c"],
+    "554":["Sodium aluminosilicate","anticaking agent","c"],"575":["Glucono delta-lactone","acidity regulator","m"],
+    "621":["MSG","flavour enhancer","c"],"627":["Disodium guanylate","flavour enhancer","c"],"631":["Disodium inosinate","flavour enhancer","c"],
+    "635":["Ribonucleotides","flavour enhancer","c"],"900":["Dimethylpolysiloxane","antifoaming agent","c"],"901":["Beeswax","glazing agent","c"],
+    "903":["Carnauba wax","glazing agent","c"],"904":["Shellac","glazing agent","c"],"941":["Nitrogen","packing gas","m"],"948":["Oxygen","packing gas","m"],
+    "950":["Acesulphame K","sweetener","c"],"951":["Aspartame","sweetener","c"],"952":["Cyclamate","sweetener","c"],"954":["Saccharin","sweetener","c"],
+    "955":["Sucralose","sweetener","c"],"960":["Steviol glycosides","sweetener","c"],"960a":["Steviol glycosides","sweetener","c"],"961":["Neotame","sweetener","c"],
+    "965":["Maltitol","sweetener","c"],"967":["Xylitol","sweetener","c"],"968":["Erythritol","sweetener","c"],
+    "1100":["Amylase","enzyme","m"],"1101":["Protease","enzyme","m"],"1105":["Lysozyme","enzyme","m"],
+    "1404":["Oxidised starch","modified starch","c"],"1412":["Distarch phosphate","modified starch","c"],"1414":["Acetylated distarch phosphate","modified starch","c"],
+    "1420":["Starch acetate","modified starch","c"],"1422":["Acetylated distarch adipate","modified starch","c"],"1442":["Hydroxypropyl distarch phosphate","modified starch","c"],
+    "1450":["Starch sodium octenyl succinate","modified starch","c"],"1520":["Propylene glycol","humectant","c"],
+  };
+  function codeInfo(raw) {
+    const c = raw.toLowerCase().replace(/^(e|ins)\s*/, "").replace(/\s+/g, "").replace(/\([ivx]+\)$/, "");
+    if (INS[c]) return { code: c, name: INS[c][0], fn: INS[c][1], sev: INS[c][2] };
+    const base = c.replace(/[a-z]+$/, "");
+    if (INS[base]) return { code: c, name: INS[base][0], fn: INS[base][1], sev: INS[base][2] };
+    const n = parseInt(base, 10);
+    let fn = "additive", sev = "c";
+    if (n >= 100 && n < 200) fn = "colour";
+    else if (n < 300) fn = "preservative";
+    else if (n < 400) { fn = "antioxidant / acidity regulator"; sev = "m"; }
+    else if (n < 500) fn = "thickener / emulsifier";
+    else if (n < 600) { fn = "mineral salt / anticaking"; sev = "m"; }
+    else if (n < 700) fn = "flavour enhancer";
+    else if (n >= 950 && n < 1000) fn = "sweetener";
+    else if (n >= 1100 && n < 1200) { fn = "enzyme"; sev = "m"; }
+    else if (n >= 1400 && n < 1500) fn = "modified starch";
+    return { code: c, name: null, fn, sev };
+  }
+
+  // Additive class words printed before codes, e.g. "emulsifier (322)".
+  const CLASS_WORDS = [
+    ["flavour enhancer", "c"], ["flavor enhancer", "c"], ["emulsifier", "c"], ["thickener", "c"], ["stabiliser", "c"], ["stabilizer", "c"],
+    ["vegetable gum", "c"], ["gelling agent", "c"], ["humectant", "c"], ["colour", "c"], ["color", "c"], ["flavouring", "c"], ["flavoring", "c"],
+    ["flavour", "c"], ["flavor", "c"], ["sweetener", "c"], ["preservative", "c"], ["glazing agent", "c"], ["anticaking agent", "c"],
+    ["anti-caking agent", "c"], ["bulking agent", "c"], ["antifoaming agent", "c"], ["modified starch", "c"], ["thickening agent", "c"],
+    ["acidity regulator", "m"], ["antioxidant", "m"], ["raising agent", "m"], ["food acid", "m"], ["mineral salt", "m"], ["firming agent", "m"],
+    ["enzyme", "m"], ["acid", "m"],
+  ];
+  function classWord(s) {
+    const t = s.toLowerCase().replace(/[^a-z\s-]/g, " ").replace(/\s+/g, " ").trim();
+    for (const [w, sev] of CLASS_WORDS) {
+      if (t === w || t === w + "s" || t === "natural " + w || t === "natural " + w + "s" || t === "artificial " + w || t === "natural and artificial " + w + "s" || t === "nature identical " + w || t === "added " + w)
+        return { fn: w, sev };
+    }
+    return null;
+  }
+
+  // Named ingredients, checked in order; first match wins.
+  const NAMED = [
+    [/hydrogenated|interesterified|shortening|margarine/, "additive_cosmetic", "Industrially hardened fat"],
+    [/lecithin/, "additive_cosmetic", "Emulsifier"],
+    [/\b(xanthan|guar|locust bean|gellan|carrageenan|agar|cellulose gum|acacia gum)\b/, "additive_cosmetic", "Thickener"],
+    [/\bpectin\b/, "additive_cosmetic", "Gelling agent"],
+    [/yeast extract|hydrolysed|hydrolyzed|autolysed|msg|monosodium glutamate/, "additive_cosmetic", "Flavour enhancer"],
+    [/(natural|artificial)?\s*flavou?r(ing|s)?\b|\bvanillin\b|smoke flavou?r/, "additive_cosmetic", "Flavouring"],
+    [/sucralose|aspartame|acesulfame|acesulphame|stevia|steviol|erythritol|xylitol|maltitol|sorbitol|monk ?fruit extract/, "additive_cosmetic", "Sweetener"],
+    [/modified (corn |maize |tapioca |potato |wheat )?starch|thickener \(14\d\d\)/, "additive_cosmetic", "Modified starch"],
+    [/processed with alkali|alkalised|alkalized|dutch[- ]process/, "additive_mild", "Treated with alkali (usually INS 501)"],
+    [/citric acid|ascorbic acid|lactic acid|malic acid|tartaric acid|vitamin c \(antioxidant\)/, "additive_mild", "Food acid"],
+    [/sodium bicarbonate|bicarbonate of soda|baking soda|baking powder|cream of tartar/, "additive_mild", "Raising agent"],
+    [/maltodextrin|dextrose|glucose|corn syrup|fructose|invert sugar|golden syrup|rice syrup|malt extract|polydextrose|inulin|oligofructose|chicory fibre/, "refined", "Refined sugar or starch"],
+    [/(protein )?isolate|protein concentrate|whey protein|soy protein|pea protein|caseinate|gluten\b|wheat protein/, "refined", "Extracted protein"],
+    [/milk solids|skim(med)? milk powder|milk powder|whey( powder)?\b|lactose|buttermilk powder|cream powder|milk protein/, "refined", "Dried or separated milk"],
+    [/\bstarch\b|cornflour|corn flour|tapioca flour|potato flour|maize flour|white rice flour/, "refined", "Refined starch"],
+    [/(wheat|white|plain|self[- ]raising|bakers|baker's|enriched) flour|^flour$|semolina/, "refined", "Refined flour (bran and germ removed)"],
+    [/thiamin|riboflavin|niacin|folic acid|folate|vitamin|iron\b|zinc\b|iodine|iodised|b12|calcium carbonate|calcium phosphate|reduced iron|ferrous/, "fortificant", "Added vitamin or mineral"],
+    [/\b(sugar|cane sugar|raw sugar|brown sugar|caster sugar|icing sugar|coconut sugar|molasses|treacle|honey|maple syrup|agave)\b/, "culinary", "Added sugar"],
+    [/\b(salt|sea salt|rock salt|iodised salt)\b/, "culinary", "Salt"],
+    [/\b(oil|canola|palm|sunflower|soybean oil|rice bran oil|olive oil|coconut oil|vegetable fat|ghee|butter|lard|tallow|cocoa butter|dripping)\b/, "culinary", "Fat or oil"],
+    [/\bvinegar\b/, "culinary", "Vinegar"],
+    [/\b(yeast|cultures?|starter|rennet|enzymes? \(rennet\))\b/, "whole", "Living culture or ferment"],
+  ];
+  const SUGAR_RX = /\b(sugar|glucose|dextrose|fructose|sucrose|maltose|maltodextrin|syrup|honey|molasses|treacle|invert|malt extract|agave|nectar|concentrated fruit juice|fruit juice concentrate)\b/;
+
+  // ---------- Parsing ----------
+  function splitTop(s) {
+    const out = []; let depth = 0, cur = "";
+    for (const ch of s) {
+      if ("([{".includes(ch)) depth++;
+      if (")]}".includes(ch)) depth = Math.max(0, depth - 1);
+      if ((ch === "," || ch === ";") && depth === 0) { if (cur.trim()) out.push(cur.trim()); cur = ""; }
+      else cur += ch;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+  const CODE_RX = /^(e|ins)?\s*\d{3,4}[a-z]?(\s*\([ivx]+\))?$/i;
+  const PCT_RX = /(\d+(?:\.\d+)?)\s*%/;
+
+  function cleanText(t) {
+    let s = t.replace(/\r/g, " ").replace(/\n+/g, " ");
+    s = s.replace(/^\s*ingredients?\s*[:\-]\s*/i, "");
+    s = s.split(/(?:^|[.:]\s*|\s)(?=contains\s*:|may contain|allergen|allergy advice|manufactured on|made on equipment|made in a facility|store in a|storage:|nutrition information)/i)[0];
+    s = s.split(/\.\s+contains\s/i)[0];
+    return s.replace(/\.\s*$/, "").trim();
+  }
+
+  // Turns an ingredients statement into flat leaves: {name, code, fn, parent, pct}
+  function parseIngredients(text) {
+    const leaves = [];
+    const walk = (str, parent, parentClass) => {
+      for (let item of splitTop(str)) {
+        item = item.replace(/^and\s+/i, "").replace(/[.*†]+$/, "").trim();
+        if (!item) continue;
+        // Split into text outside brackets and each top-level bracket group.
+        let head = "", groups = [], depth = 0, buf = "";
+        for (const ch of item) {
+          if ("([".includes(ch)) { if (depth === 0) { buf = ""; } else buf += ch; depth++; continue; }
+          if (")]".includes(ch) && depth > 0) { depth--; if (depth === 0) groups.push(buf.trim()); else buf += ch; continue; }
+          if (depth === 0) head += ch; else buf += ch;
+        }
+        if (depth > 0 && buf.trim()) groups.push(buf.trim());
+        head = head.replace(/\s+/g, " ").trim();
+        let pct = null, inner = null, extra = [];
+        const pm = head.match(PCT_RX); if (pm) { pct = parseFloat(pm[1]); head = head.replace(PCT_RX, "").trim(); }
+        for (const g of groups) {
+          if (/^(min\.?\s*|minimum\s*)?[\d.\s]+%$/i.test(g)) pct = parseFloat(g.replace(/[^\d.]/g, ""));
+          else if (inner === null) inner = g.replace(/^contains\s+/i, "");
+          else extra.push(g);
+        }
+        if (extra.length) head = head + " (" + extra.join(", ") + ")";
+        // A leaf that is just a code, e.g. "322" inside "emulsifier (322)".
+        if (CODE_RX.test(head)) { leaves.push({ name: head, code: head, parent, parentClass, pct }); continue; }
+        if (inner && CODE_RX.test(inner)) { leaves.push({ name: head, code: inner, parent, parentClass, pct }); continue; }
+        const cls = classWord(head);
+        if (inner && cls) { walk(inner, head, cls); continue; }
+        if (inner) {
+          // Compound ingredient like "chocolate chips (sugar, cocoa mass, ...)" — or a descriptor like "vegetable oil (palm)".
+          const kids = splitTop(inner);
+          if (kids.length === 1 && !/[()]/.test(inner) && !CODE_RX.test(inner) && !classWord(inner)) {
+            leaves.push({ name: head + " (" + inner + ")", code: null, parent, parentClass, pct }); continue;
+          }
+          // "Wheat flour (thiamin, folic acid)": the flour itself is still an ingredient.
+          if (kids.every(k => classifyLeaf({ name: k }).kind === "fortificant")) leaves.push({ name: head, code: null, parent, parentClass, pct });
+          walk(inner, head, parentClass); continue;
+        }
+        leaves.push({ name: head, code: null, parent, parentClass, pct });
+      }
+    };
+    walk(cleanText(text), null, null);
+    return leaves;
+  }
+
+  function classifyLeaf(leaf) {
+    const name = (leaf.name || "").toLowerCase();
+    if (leaf.code) {
+      const info = codeInfo(leaf.code);
+      const fn = leaf.parentClass?.fn || info.fn;
+      const sev = leaf.parentClass?.sev === "c" || info.sev === "c" ? "c" : "m";
+      return { kind: sev === "c" ? "additive_cosmetic" : "additive_mild", note: cap(fn), code: info.code, codeName: info.name };
+    }
+    const cw = classWord(name);
+    if (cw) return { kind: cw.sev === "c" ? "additive_cosmetic" : "additive_mild", note: cap(cw.fn) };
+    if (leaf.parentClass) {
+      const named = NAMED.find(([rx]) => rx.test(name));
+      const sev = leaf.parentClass.sev;
+      return { kind: sev === "c" ? "additive_cosmetic" : (named && named[1] === "additive_cosmetic" ? "additive_cosmetic" : "additive_mild"), note: cap(leaf.parentClass.fn) };
+    }
+    for (const [rx, kind, note] of NAMED) if (rx.test(name)) return { kind, note };
+    if (/^water$|^filtered water$/.test(name)) return { kind: "whole", note: "Water" };
+    return { kind: "whole", note: null };
+  }
+  const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+
+  // ---------- Scoring ----------
+  function analyse({ product, ingredientsText, leaves, nip, notes, example }) {
+    const items = leaves.map(l => {
+      const local = classifyLeaf(l);
+      let kind = local.kind, note = local.note;
+      if (l.kind && KIND_RANK[l.kind] !== undefined && KIND_RANK[l.kind] > KIND_RANK[kind]) { kind = l.kind; note = l.note || note; }
+      else if (l.note && !note) note = l.note;
+      return { name: l.name, code: local.code || l.code || null, codeName: local.codeName || null, kind, note, parent: l.parent, pct: l.pct };
+    });
+    const count = k => items.filter(i => i.kind === k).length;
+    const c = Object.fromEntries(Object.keys(KIND_RANK).map(k => [k, count(k)]));
+    const additives = c.additive_mild + c.additive_cosmetic;
+    const n = items.length;
+    let tier;
+    if (n === 0) tier = null;
+    else if (c.additive_cosmetic > 0 || additives >= 3) tier = 5;
+    else if (additives > 0 || c.refined > 0) tier = 4;
+    else if (c.culinary > 0 || c.fortificant > 0) tier = 3;
+    else if (n === 1) tier = 1;
+    else tier = 2;
+
+    let score = null;
+    if (tier) {
+      const [lo, hi] = TIERS[tier].band;
+      const pen = c.culinary * 5 + c.fortificant * 2 + c.refined * 7 + c.additive_mild * 6 + c.additive_cosmetic * 4 + Math.max(0, n - 3) * 1;
+      score = Math.round(Math.max(lo, hi - (tier === 5 ? pen / 2 : pen)));
+    }
+
+    const checks = [];
+    const say = (calm, blunt) => checks.push({ calm, blunt: blunt || calm });
+    const sugars = items.filter(i => SUGAR_RX.test(i.name.toLowerCase()) && i.kind !== "whole");
+    const sugarNames = [...new Set(sugars.map(s => s.name.toLowerCase()))];
+    if (n === 1 && items[0].pct === 100) say("Labelled 100%, and the ingredient list agrees: nothing else is in it.", "100% means 100% here. Nothing was snuck in.");
+    else if (n === 1) say("One ingredient only. Nothing has been added.", "One ingredient. Nothing added. This is how it should be.");
+    const pct100 = items.find(i => i.pct === 100);
+    if (pct100 && n > 1) say(`"${pct100.name}" is labelled 100%, but ${n - 1} other ingredient${n > 2 ? "s are" : " is"} listed too. The 100% may refer to only part of the product.`, `"100%" on the front, ${n - 1} other ingredient${n > 2 ? "s" : ""} on the back. The label is counting on you not to turn the pack over.`);
+    const topSugar = items.slice(0, 3).find(i => SUGAR_RX.test(i.name.toLowerCase()) && i.kind !== "whole");
+    if (topSugar) say(`Added sugar is in the top three ingredients ("${topSugar.name}"). Ingredients are listed by weight, so it's a major part of the product.`, `"${cap(topSugar.name)}" is one of the three biggest things in this. Ingredients are listed by weight. You are mostly eating sugar.`);
+    if (sugarNames.length >= 2) say(`Added sugar appears under ${sugarNames.length} different names: ${sugarNames.join(", ")}.`, `Sugar is hiding under ${sugarNames.length} different names (${sugarNames.join(", ")}) so none of them has to sit at the top of the list.`);
+    if (items.some(i => /alkali|alkalis|dutch|^501$/.test(i.name.toLowerCase()) || i.code === "501")) say("The cocoa has been treated with alkali (Dutch-processed). It's darker and milder, but it's no longer raw cocoa.", "The cocoa was chemically treated with alkali. It looks darker and richer, but much of the cocoa's natural goodness (its flavanols) is destroyed.");
+    if (c.additive_cosmetic) say(`${c.additive_cosmetic} cosmetic additive${c.additive_cosmetic > 1 ? "s" : ""} found. These change texture, taste, colour or shelf life rather than adding food.`, `${c.additive_cosmetic} additive${c.additive_cosmetic > 1 ? "s" : ""} that exist only to fake texture, taste, colour or shelf life. None of them is there for you.`);
+    const compounds = [...new Set(items.filter(i => i.kind !== "fortificant").map(i => i.parent).filter(p => p && !classWord(p)))];
+    if (compounds.length) say(`Contains ready-made components (${compounds.join(", ")}), each with its own ingredient list.`, `Made from other factory products (${compounds.join(", ")}), each with its own list of additives.`);
+    if (nip && tier && tier <= 2 && nip.sugars != null && nip.sugars > 22.5 && !sugars.length) say("High in sugars, though none is added. The sugar comes from the food itself (often dried fruit).");
+    if (nip && nip.sugars != null && nip.sugars > 22.5 && sugars.length) say(`${Math.round(nip.sugars)} g of sugars per 100 g, which is high.`, `${Math.round(nip.sugars)} g of sugar in every 100 g. That's about ${Math.round(nip.sugars / 4)} teaspoons.`);
+    if (nip && nip.sodium != null && nip.sodium > 600) say(`${Math.round(nip.sodium)} mg sodium per 100 g, which is high.`, `${Math.round(nip.sodium)} mg of sodium per 100 g. Salt like this is how blood pressure creeps up for years before you feel anything.`);
+    for (const nt of notes || []) say(nt);
+
+    return { product: product || null, ingredientsText, items, counts: c, tier, score, checks, nip: nip || null, example: !!example, at: Date.now() };
+  }
+
+  // ---------- Tone ----------
+  let tone = "blunt"; try { tone = localStorage.getItem("nothing-added-tone") || "blunt"; } catch {}
+  let current = null;
+  function setTone(t) {
+    tone = t;
+    document.getElementById("tone-blunt").setAttribute("aria-selected", t === "blunt");
+    document.getElementById("tone-calm").setAttribute("aria-selected", t === "calm");
+    try { localStorage.setItem("nothing-added-tone", t); } catch {}
+    if (current) render(current);
+    if (LOG.ready) renderLog();
+  }
+
+  // ---------- Rendering ----------
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const tierColor = t => `var(--t${t})`;
+
+  function level(v, lo, hi) { if (v == null || isNaN(v)) return ""; return v <= lo ? '<span class="lo">Low</span>' : v > hi ? '<span class="hi">High</span>' : '<span class="md">Med</span>'; }
+  const fmt = (v, u) => v == null || isNaN(v) ? "–" : (Math.round(v * 10) / 10) + " " + u;
+
+  function render(r) {
+    const el = $("result");
+    current = r;
+    if (!r) { el.innerHTML = ""; return; }
+    if (!r.tier) {
+      el.innerHTML = `<div class="panel"><p>No ingredients found. Check the photo shows the ingredients list clearly, or type it in.</p></div>`;
+      return;
+    }
+    const T = TIERS[r.tier];
+    const ladder = [1, 2, 3, 4, 5].map(i => `<div class="${i === r.tier ? "on" : ""}"><span class="bar" style="${i === r.tier ? "" : ""}"></span><span><b>${i}</b>${TIERS[i].short}</span></div>`).join("");
+    const ings = r.items.map(i => `
+      <li class="k-${i.kind}">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="nm">${esc(cap(i.codeName && (/^(e|ins)?\s*\d/i.test(i.name) || classWord(i.name)) ? i.codeName : i.name))}${i.code ? `<span class="code">${esc(i.code)}</span>` : ""}${i.pct != null ? ` <span class="hint">${i.pct}%</span>` : ""}
+          ${(() => { const bits = [i.note && i.note.toLowerCase() !== i.name.toLowerCase() ? i.note : "", i.parent && !classWord(i.parent) ? "in " + i.parent : ""].filter(Boolean); return bits.length ? `<small>${esc(bits.join(" · "))}</small>` : ""; })()}</span>
+        <span class="kind">${KIND_LABEL[i.kind]}</span>
+      </li>`).join("");
+    const cnt = r.counts;
+    const counts = Object.keys(KIND_RANK).filter(k => cnt[k]).map(k => `<span class="k-${k}"><span class="dot"></span>${cnt[k]} ${KIND_LABEL[k].toLowerCase()}</span>`).join("");
+    const nip = r.nip && Object.values(r.nip).some(v => v != null) ? `
+      <div class="sect"><h4>Nutrition per 100 g</h4>
+        <div style="overflow-x:auto"><table class="nip"><tbody>
+          ${r.nip.energy_kj != null ? `<tr><th>Energy</th><td>${fmt(r.nip.energy_kj, "kJ")}</td><td class="lvl"></td></tr>` : ""}
+          ${r.nip.protein != null ? `<tr><th>Protein</th><td>${fmt(r.nip.protein, "g")}</td><td class="lvl"></td></tr>` : ""}
+          ${r.nip.fat != null ? `<tr><th>Fat, total</th><td>${fmt(r.nip.fat, "g")}</td><td class="lvl">${level(r.nip.fat, 3, 17.5)}</td></tr>` : ""}
+          ${r.nip.sat_fat != null ? `<tr><th>&nbsp;&nbsp;– saturated</th><td>${fmt(r.nip.sat_fat, "g")}</td><td class="lvl">${level(r.nip.sat_fat, 1.5, 5)}</td></tr>` : ""}
+          ${r.nip.carbs != null ? `<tr><th>Carbohydrate</th><td>${fmt(r.nip.carbs, "g")}</td><td class="lvl"></td></tr>` : ""}
+          ${r.nip.sugars != null ? `<tr><th>&nbsp;&nbsp;– sugars</th><td>${fmt(r.nip.sugars, "g")}</td><td class="lvl">${level(r.nip.sugars, 5, 22.5)}</td></tr>` : ""}
+          ${r.nip.fibre != null ? `<tr><th>Dietary fibre</th><td>${fmt(r.nip.fibre, "g")}</td><td class="lvl"></td></tr>` : ""}
+          ${r.nip.sodium != null ? `<tr><th>Sodium</th><td>${fmt(r.nip.sodium, "mg")}</td><td class="lvl">${level(r.nip.sodium, 120, 600)}</td></tr>` : ""}
+        </tbody></table></div>
+      </div>` : "";
+    el.innerHTML = `
+      <article class="panel t${r.tier}" style="--tier:${tierColor(r.tier)}">
+        <div class="panel-head">
+          <span class="eyebrow">${r.example ? '<span class="tag-example">Example</span>' : ""}<span>${tone === "blunt" ? "The truth about this" : "Where it sits"}</span></span>
+          <h2>${esc(r.product || "Scanned product")}</h2>
+        </div>
+        <div class="verdict">
+          <div class="score">${r.score}<small>Purity</small></div>
+          <div><h3>${T.name}</h3>${tone === "calm" ? `<p>${T.blurb}</p>` : ""}</div>
+        </div>
+        ${tone === "blunt" ? `<p class="punch">${esc(BLUNT[r.tier].punch)}</p><p>${esc(BLUNT[r.tier].line)}</p>` : ""}
+        ${lifeHTML(r)}
+        <div class="ladder" aria-label="Processing scale, step ${r.tier} of 5">${ladder}</div>
+        <div class="logit">
+          <label for="log-grams" class="hint">I ate</label>
+          <input id="log-grams" type="number" inputmode="decimal" min="1" value="${r.nip?.serving_g || 100}">
+          <span class="hint">g${r.nip?.serving_g ? ` (1 serve = ${r.nip.serving_g} g)` : ""}</span>
+          <button id="log-add" class="btn primary">Add to today's log</button>
+          <span id="log-msg" class="hint" role="status"></span>
+        </div>
+        ${r.checks.length ? `<div class="sect"><h4>What the label tells you</h4><ul class="checks">${r.checks.map(c => `<li>${esc(typeof c === "string" ? c : c[tone])}</li>`).join("")}</ul></div>` : ""}
+        ${EVIDENCE[r.tier] && (tone === "blunt" || r.tier === 5) ? `<div class="evidence"><h4 style="margin:0;font-family:var(--display);text-transform:uppercase;font-stretch:80%">${EVIDENCE[r.tier].head}</h4><ul>${EVIDENCE[r.tier].items.map(x => `<li>${esc(x)}</li>`).join("")}</ul><span class="src">${esc(EVIDENCE[r.tier].src)}</span></div>` : ""}
+        <div class="sect"><h4>Ingredients · ${r.items.length}</h4>
+          <div class="counts">${counts}</div>
+          <ul class="ings">${ings}</ul>
+        </div>
+        ${nip}
+      </article>`;
+  }
+
+  // ---------- History (this device only) ----------
+  const HKEY = "nothing-added-history";
+  const loadHist = () => { try { return JSON.parse(localStorage.getItem(HKEY) || "[]"); } catch { return []; } };
+  const saveHist = h => { try { localStorage.setItem(HKEY, JSON.stringify(h.slice(0, 15))); } catch {} };
+  function pushHist(r) { if (r.example || !r.tier) return; const h = loadHist(); h.unshift(r); saveHist(h); renderHist(); }
+  function renderHist() {
+    const h = loadHist();
+    $("history-wrap").hidden = !h.length;
+    $("history").innerHTML = h.map((r, i) => `<button data-i="${i}" style="--tier:${tierColor(r.tier)}"><span class="s">${r.score}</span><span class="nm">${esc(r.product || "Scanned product")}<br><span class="t">${TIERS[r.tier].name}${r.tier === 5 ? " · −" + MIN_PER_SERVING + " min a serve" : ""} · ${new Date(r.at).toLocaleDateString()}</span></span><span class="t">›</span></button>`).join("");
+  }
+  $("history").addEventListener("click", e => {
+    const b = e.target.closest("button[data-i]"); if (!b) return;
+    const r = loadHist()[+b.dataset.i]; if (r) { render(r); $("result").scrollIntoView({ behavior: "smooth", block: "start" }); }
+  });
+
+  // ---------- Examples ----------
+  const EXAMPLES = [
+    { label: "Cocoa powder 100%", product: "Cocoa powder", text: "Cocoa (100%).", nip: { energy_kj: 1490, protein: 19.6, fat: 13.7, sat_fat: 8.1, carbs: 11.5, sugars: 0.8, fibre: 33, sodium: 20, serving_g: 5 } },
+    { label: "Drinking chocolate", product: "Drinking chocolate", text: "Sugar, cocoa (processed with alkali) (25%), milk solids, glucose syrup solids, emulsifier (soy lecithin), salt, flavour.", nip: { energy_kj: 1620, protein: 6.1, fat: 3.9, sat_fat: 2.3, carbs: 75, sugars: 68, sodium: 210, servings: 20, serving_g: 20 } },
+    { label: "Toasted muesli", product: "Toasted muesli", text: "Rolled oats (60%), honey, sunflower oil, almonds (6%), sultanas, coconut, pumpkin seeds.", nip: { energy_kj: 1840, protein: 9.8, fat: 17.2, sat_fat: 4.6, carbs: 56, sugars: 17.9, fibre: 7.1, sodium: 8, serving_g: 45 } },
+    { label: "Supermarket white bread", product: "White sandwich bread", text: "Wheat flour (contains thiamin, folic acid), water, yeast, wheat gluten, canola oil, iodised salt, soy flour, emulsifiers (481, 471, 472e), vinegar, vegetable gum (412), preservative (282).", nip: { energy_kj: 1040, protein: 8.9, fat: 2.6, sat_fat: 0.4, carbs: 44, sugars: 2.8, fibre: 2.7, sodium: 420, servings: 9, serving_g: 76 } },
+    { label: "Plain yoghurt", product: "Natural yoghurt", text: "Milk, cultures.", nip: { energy_kj: 290, protein: 5.2, fat: 3.4, sat_fat: 2.2, carbs: 6.0, sugars: 6.0, sodium: 60, serving_g: 150 } },
+  ];
+  const exWrap = document.querySelector(".examples");
+  EXAMPLES.forEach((ex, i) => {
+    const b = document.createElement("button"); b.className = "chip"; b.textContent = ex.label; b.id = "ex-" + i;
+    b.onclick = () => { setStatus(""); render(analyse({ product: ex.product, ingredientsText: ex.text, leaves: parseIngredients(ex.text), nip: ex.nip, example: true })); };
+    exWrap.append(b);
+  });
+
+  // ---------- Tabs ----------
+  function showTab(which) {
+    $("tab-photo").setAttribute("aria-selected", which === "photo");
+    $("tab-text").setAttribute("aria-selected", which === "text");
+    $("pane-photo").style.display = which === "photo" ? "grid" : "none";
+    $("pane-text").style.display = which === "text" ? "grid" : "none";
+    try { localStorage.setItem("nothing-added-tab", which); } catch {}
+  }
+  $("tab-photo").onclick = () => showTab("photo");
+  $("tab-text").onclick = () => showTab("text");
+
+  const setStatus = (msg, err) => { $("status").textContent = msg; $("status").className = "status" + (err ? " err" : ""); };
+
+  // ---------- Text mode ----------
+  const num = id => { const v = parseFloat(($(id).value || "").replace(",", ".")); return isNaN(v) ? null : v; };
+  const NIP_FIELDS = { "n-kj": "energy_kj", "n-pro": "protein", "n-fat": "fat", "n-sat": "sat_fat", "n-carb": "carbs", "n-sug": "sugars", "n-fib": "fibre", "n-na": "sodium", "n-serve": "serving_g" };
+  $("check").onclick = () => {
+    const text = $("ing").value.trim();
+    if (!text) { setStatus("Paste or type the ingredients list first.", true); return; }
+    setStatus("");
+    const nf = detectNotFood(text + " " + $("pname").value);
+    if (nf) { renderNotFood(nf); return; }
+    const nip = {}; for (const [id, k] of Object.entries(NIP_FIELDS)) nip[k] = num(id);
+    const r = analyse({ product: $("pname").value.trim(), ingredientsText: text, leaves: parseIngredients(text), nip });
+    finishResult(r, pendingBarcode);
+  };
+  function fillTextForm(product, ingredients, nip) {
+    $("ing").value = ingredients || "";
+    $("pname").value = product || "";
+    for (const [id, k] of Object.entries(NIP_FIELDS)) $(id).value = nip?.[k] != null ? nip[k] : "";
+  }
+
+  // ---------- Product library (barcode → result) ----------
+  let pendingBarcode = null;
+  const localProducts = () => { try { return JSON.parse(localStorage.getItem("na-products") || "{}"); } catch { return {}; } };
+  async function getProduct(code) {
+    if (LOG.mode === "db" && LOG.col) {
+      try { const snap = await LOG.col.doc("bc-" + code).get(); if (snap.exists) return snap.data().result || null; } catch {}
+    }
+    return localProducts()[code] || null;
+  }
+  function saveProduct(code, r) {
+    const slim = { ...r, example: false, barcode: code };
+    try { const p = localProducts(); p[code] = slim; localStorage.setItem("na-products", JSON.stringify(p)); } catch {}
+    if (LOG.mode === "db" && LOG.col) {
+      LOG.chain = LOG.chain.then(() => LOG.col.doc("bc-" + code).set({ type: "product", barcode: code, at: Date.now(), result: slim })).catch(() => {});
+    }
+  }
+  function finishResult(r, code) {
+    if (code) { r.barcode = code; saveProduct(code, r); }
+    render(r); pushHist(r);
+    $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function showBarcode(code, state) {
+    const box = $("barcode-box");
+    if (!code) { box.hidden = true; return; }
+    box.hidden = false;
+    const off = `<a href="https://world.openfoodfacts.org/product/${encodeURIComponent(code)}" target="_blank" rel="noopener">See it on Open Food Facts</a>`;
+    box.innerHTML = `<span class="code">${esc(code)}</span> ${state === "known"
+      ? "<b>In your library.</b> Showing your saved result."
+      : `<b>New product.</b> Photograph the ingredients and nutrition panel, then tap Read label. It'll be saved to this barcode, so next time the barcode is enough. ${off}`}`;
+  }
+
+  // ---------- Barcode decoding (on the phone, ZXing) ----------
+  function loadImg(file) {
+    return new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = URL.createObjectURL(file); });
+  }
+  function toCanvas(img, maxSide) {
+    const w = img.naturalWidth, h = img.naturalHeight, sc = Math.min(1, maxSide / Math.max(w, h));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w * sc)); c.height = Math.max(1, Math.round(h * sc));
+    c.getContext("2d", { willReadFrequently: true }).drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  }
+  async function decodeBarcode(file) {
+    const Z = window.ZXing;
+    if (!Z) return null;
+    let img; try { img = await loadImg(file); } catch { return null; }
+    const hints = new Map();
+    hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.UPC_E, Z.BarcodeFormat.CODE_128]);
+    hints.set(Z.DecodeHintType.TRY_HARDER, true);
+    const reader = new Z.MultiFormatReader();
+    reader.setHints(hints);
+    for (const side of [1400, 2400, 900]) {
+      const src = new Z.HTMLCanvasElementLuminanceSource(toCanvas(img, side));
+      for (const Bin of [Z.HybridBinarizer, Z.GlobalHistogramBinarizer]) {
+        try { return reader.decodeWithState(new Z.BinaryBitmap(new Bin(src))).getText(); } catch {}
+      }
+      await new Promise(r => setTimeout(r, 0));
+    }
+    return null;
+  }
+
+  // ---------- Text recognition on the phone (Tesseract), used when Claude can't see photos ----------
+  let ocrWorker = null, ocrProgress = null;
+  async function ocrImage(file, onProgress) {
+    if (!window.Tesseract) throw { code: "ocr_missing" };
+    ocrProgress = onProgress;
+    if (!ocrWorker) {
+      ocrWorker = await Tesseract.createWorker("eng", 1, {
+        logger: m => ocrProgress?.(m),
+      });
+    }
+    const img = await loadImg(file);
+    const { data } = await ocrWorker.recognize(toCanvas(img, 2200), {}, { text: true, blocks: true });
+    // Rebuild table rows from word positions so NIP rows stay on one line even when columns are far apart.
+    const words = [];
+    for (const b of data.blocks || []) for (const p of b.paragraphs || []) for (const l of p.lines || []) for (const w of l.words || []) {
+      if (w.text && w.bbox) words.push({ t: w.text, x: w.bbox.x0, yc: (w.bbox.y0 + w.bbox.y1) / 2, h: w.bbox.y1 - w.bbox.y0 });
+    }
+    words.sort((a, b) => a.yc - b.yc);
+    const rows = [];
+    for (const w of words) {
+      const row = rows[rows.length - 1];
+      if (row && Math.abs(w.yc - row.yc) < Math.max(6, 0.55 * Math.min(w.h, row.h))) { row.ws.push(w); row.yc = (row.yc + w.yc) / 2; }
+      else rows.push({ yc: w.yc, h: w.h, ws: [w] });
+    }
+    return { text: data.text || "", rows: rows.map(r => r.ws.sort((a, b) => a.x - b.x).map(w => w.t).join(" ")) };
+  }
+
+  // Pulls the ingredients statement and per-100 g NIP values out of recognised text.
+  function extractLabel(text, rows) {
+    const flat = (text || "").replace(/\r/g, "");
+    let ingredients = null;
+    const m = flat.match(/ingred[il1]ents?\s*[:;.]?\s*([\s\S]*?)(?=\n\s*\n|contains\s*:|may contain|allergen|allergy|nutrition|storage|store (?:in|below)|serving size|best before|$)/i);
+    if (m && m[1].trim().length > 2) ingredients = m[1].replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+    const nip = {};
+    const ROWS = [["energy_kj", /\benergy\b/i], ["protein", /\bprotein\b/i], ["sat_fat", /saturated/i], ["fat", /\bfat\b/i],
+      ["carbs", /carbohydrate/i], ["sugars", /\bsugars?\b/i], ["fibre", /\bfib(re|er)\b/i], ["sodium", /\bsodium\b/i]];
+    const lines = rows && rows.length ? rows : flat.split("\n");
+    for (const line of lines) {
+      for (const [k, rx] of ROWS) {
+        if (nip[k] != null || !rx.test(line)) continue;
+        if (k === "fat" && /saturated|trans|mono|poly/i.test(line)) continue;
+        if (k === "sugars" && /carbohydrate|no added/i.test(line)) continue;
+        const nums = [...line.matchAll(/(\d+(?:[.,]\d+)?)\s*(kj|kcal|cal|mg|g|ml|%)?/gi)]
+          .filter(x => !/^(%|kcal|cal)$/i.test(x[2] || ""));
+        if (!nums.length) continue;
+        const last = nums[nums.length - 1];
+        let v = parseFloat(last[1].replace(",", "."));
+        // OCR often reads the unit "g" as a 9: "6.1g" → "6.19". NIP gram values are printed to one decimal place.
+        if (k !== "energy_kj" && k !== "sodium" && !last[2] && /^\d+[.,]\d9$/.test(last[1])) v = parseFloat(last[1].slice(0, -1).replace(",", "."));
+        if (k === "sodium" && /^g$/i.test(last[2] || "")) v *= 1000;
+        if (!isNaN(v)) nip[k] = v;
+      }
+    }
+    const sv = flat.match(/serving size\s*[:\-]?\s*(\d+(?:[.,]\d+)?)\s*(g|ml)/i);
+    if (sv) nip.serving_g = parseFloat(sv[1].replace(",", "."));
+    const sp = flat.match(/servings? per (?:package|pack|container|bag|box)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)/i);
+    if (sp) nip.servings = parseFloat(sp[1].replace(",", "."));
+    return { ingredients, nip };
+  }
+
+  // ---------- Not food (easter eggs) ----------
+  // Matched against label text read on the phone. danger: true swaps the joke for poison advice.
+  const NOT_FOOD = [
+    [/button batter|coin cell|cr20\d\d|lithium batter|alkaline batter|\bbatteries\b/i, "Batteries", "Powering your remote is a calling. Powering you is not.", true,
+      "Button batteries can burn through the throat in about two hours. If one has been swallowed, go to an emergency department now."],
+    [/bleach|hypochlorite|drain clean|oven clean|caustic|sodium hydroxide/i, "Bleach and cleaners", "This kills 99.9% of germs. You are mostly made of things it doesn't like either.", true],
+    [/dishwash|dish wash|laundry|washing powder|detergent|fabric softener/i, "Detergent", "Lemon fresh, and still not lemonade.", true],
+    [/weed ?killer|herbicide|insecticide|fly spray|slug bait|rat bait|rodenticide|fertili[sz]er|potting mix/i, "Garden chemicals", "For the garden. The garden can have it.", true],
+    [/motor oil|engine oil|lubricant|wd-?40|petrol|diesel|kerosene/i, "Oil for machines", "Your car runs on this. You run on vegetables.", true],
+    [/super ?glue|adhesive|\bglue\b/i, "Glue", "It sticks to everything, including the inside of you.", true],
+    [/hand saniti[sz]er|isopropyl|methylated spirit/i, "Hand sanitiser", "For hands. Alcohol this strong does real damage inside you.", true],
+    [/cigarette|tobacco|\bvape\b|e-liquid|nicotine/i, "Tobacco", "Not food, and it costs a lot more than 50 minutes a pack.", true],
+    [/shampoo|conditioner/i, "Shampoo", "It lathers beautifully, which is exactly the problem. Your hair is the only part of you that wants this."],
+    [/toothpaste|fluoride toothpaste|mouthwash/i, "Toothpaste", "Brush, spit, don't swallow. Two out of three is how this one goes."],
+    [/sunscreen|sunblock|\bspf ?\d+/i, "Sunscreen", "SPF 50 protects your skin, not your stomach. Wear it, don't eat it."],
+    [/moisturi[sz]er|body lotion|hand cream|\blotion\b/i, "Moisturiser", "Your skin drinks it up. Your mouth shouldn't."],
+    [/body wash|shower gel|bar soap|\bsoap\b/i, "Soap", "Technically clean eating. Still no."],
+    [/deodorant|antiperspirant/i, "Deodorant", "Keeps you fresh on the outside. That's the only side it's for."],
+    [/lip ?balm|lipstick|mascara|foundation|nail polish/i, "Makeup", "Edible-looking, maybe. Edible, no."],
+    [/scented candle|soy wax|paraffin|\bcandle\b/i, "A candle", "Smells like vanilla cupcake. Is wax. Both things are true."],
+    [/dog food|cat food|for adult dogs|for adult cats|complete pet|pet food|kibble|for puppies|for kittens/i, "Pet food", "This was made for someone with four legs. Give it back."],
+  ];
+  const DANGER_WORDS = /if swallowed|harmful if swallowed|do not swallow|not for internal use|keep out of reach of children|poison|corrosive|irritant|first aid:/i;
+  const POISON_LINE = "If anyone has swallowed it, call the Poisons Centre now: NZ 0800 764 766 · AU 13 11 26. In an emergency, call 111 (NZ) or 000 (AU).";
+
+  function detectNotFood(text) {
+    for (const [rx, item, quip, danger, extra] of NOT_FOOD) if (rx.test(text)) return { item, quip, danger: !!danger, extra: extra || null };
+    if (DANGER_WORDS.test(text) && !/ingredients?\s*:/i.test(text)) return { item: "This", quip: "The label says don't swallow it. That's a strong hint.", danger: true };
+    return null;
+  }
+
+  function renderNotFood(nf) {
+    current = null;
+    const blunt = tone === "blunt";
+    const head = nf.danger ? "Don't eat this. Seriously." : blunt ? `Do not eat the ${nf.item.toLowerCase()}.` : "That's not food.";
+    $("result").innerHTML = `
+      <article class="panel t5" style="--tier:var(--t5)">
+        <div class="panel-head">
+          <span class="eyebrow"><span>Not food</span></span>
+          <h2>${esc(nf.item)}</h2>
+        </div>
+        <p class="punch">${esc(head)}</p>
+        <p>${esc(nf.quip)}</p>
+        ${nf.danger ? `<div class="evidence"><h4 style="margin:0;font-family:var(--display);text-transform:uppercase;font-stretch:80%">If it's been swallowed</h4>
+          ${nf.extra ? `<p style="margin:0">${esc(nf.extra)}</p>` : ""}<p style="margin:0"><b>${esc(POISON_LINE)}</b></p></div>` : ""}
+        <p class="hint" style="margin:0">Scan the ingredients list of a food or drink to see how processed it is.</p>
+      </article>`;
+    $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // ---------- Photo mode ----------
+  let photos = [], sample = null, canImages = false, maxImages = 3, ctl = null, photoBarcode = null;
+  function drawThumbs() {
+    $("thumbs").innerHTML = "";
+    photos.forEach(f => { const img = document.createElement("img"); img.alt = "Label photo"; img.src = URL.createObjectURL(f); $("thumbs").append(img); });
+    $("scan").disabled = !photos.length;
+    $("clear-photos").hidden = !photos.length;
+    $("read-row").hidden = !photos.length;
+  }
+  async function onPhotos(files, fromBarcodeButton) {
+    files = [...files];
+    if (!files.length) return;
+    if (fromBarcodeButton) { photos = []; }
+    photos = photos.concat(files).slice(-maxImages);
+    drawThumbs();
+    if (!window.ZXing) { if (fromBarcodeButton) setStatus("The barcode reader didn't load. Check your connection and reopen the app.", true); return; }
+    setStatus("Looking for a barcode…");
+    let code = null;
+    for (const f of files) { code = await decodeBarcode(f); if (code) break; }
+    if (!code) {
+      if (fromBarcodeButton) {
+        setStatus("Couldn't find a barcode in that photo. Get close enough that the barcode fills most of the frame, keep it flat and in focus, and try again.", true);
+        photos = []; drawThumbs();
+      } else setStatus("");
+      return;
+    }
+    photoBarcode = code; pendingBarcode = code;
+    const known = await getProduct(code);
+    if (known) {
+      photoBarcode = pendingBarcode = null; // done with this product; the next photos are a new one
+      showBarcode(code, "known"); setStatus("");
+      if (fromBarcodeButton) { photos = []; drawThumbs(); }
+      render({ ...known, at: Date.now() }); pushHist({ ...known, at: Date.now() });
+      $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      if (fromBarcodeButton) { photos = []; drawThumbs(); }
+      const off = await lookupOFF(code);
+      if (off) return;
+      showBarcode(code, "new"); setStatus("");
+    }
+  }
+
+  // Open Food Facts lookup. Only works when the app runs on its own website: inside Claude the page can't reach other sites.
+  const STANDALONE = !window.claude;
+  async function lookupOFF(code) {
+    if (!STANDALONE || !navigator.onLine) return false;
+    setStatus("Looking it up on Open Food Facts…");
+    let p;
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,product_name_en,brands,ingredients_text_en,ingredients_text,nutriments,serving_quantity`);
+      if (!res.ok) { setStatus(""); return false; }
+      const j = await res.json();
+      if (j.status !== 1 || !j.product) { setStatus(""); return false; }
+      p = j.product;
+    } catch { setStatus(""); return false; }
+    const name = [String(p.brands || "").split(",")[0].trim(), p.product_name_en || p.product_name].filter(Boolean).join(" ") || null;
+    const ing = (p.ingredients_text_en || p.ingredients_text || "").trim();
+    if (!ing) {
+      showBarcode(code, "new");
+      setStatus(`Found ${name ? "“" + name + "”" : "this product"} on Open Food Facts, but it has no ingredient list. Photograph the label to check it.`);
+      return true;
+    }
+    const n = p.nutriments || {};
+    const g = k => { const v = n[k]; return v === "" || v == null || isNaN(+v) ? null : +v; };
+    const nip = {
+      energy_kj: g("energy-kj_100g") ?? g("energy_100g"), protein: g("proteins_100g"), fat: g("fat_100g"), sat_fat: g("saturated-fat_100g"),
+      carbs: g("carbohydrates_100g"), sugars: g("sugars_100g"), fibre: g("fiber_100g"),
+      sodium: g("sodium_100g") != null ? Math.round(g("sodium_100g") * 1000) : null,
+      serving_g: +p.serving_quantity > 0 ? +p.serving_quantity : null, servings: null,
+    };
+    const r = analyse({ product: name, ingredientsText: ing, leaves: parseIngredients(ing), nip,
+      notes: ["From Open Food Facts, a database built by volunteers. Recipes change, so check it against the pack."] });
+    showBarcode(code, "known");
+    $("barcode-box").innerHTML = `<span class="code">${esc(code)}</span> <b>Found on Open Food Facts</b> and saved to your library.`;
+    setStatus("");
+    finishResult(r, code);
+    photoBarcode = pendingBarcode = null;
+    return true;
+  }
+  $("cam-bc").onchange = e => { const f = e.target.files; onPhotos(f, true); e.target.value = ""; };
+  $("cam").onchange = e => { const f = e.target.files; onPhotos(f, false); e.target.value = ""; };
+  $("pick").onchange = e => { const f = e.target.files; onPhotos(f, false); e.target.value = ""; };
+  $("clear-photos").onclick = () => { photos = []; photoBarcode = null; pendingBarcode = null; showBarcode(null); drawThumbs(); setStatus(""); };
+
+  const PROMPT_RULES = `Reply with only one JSON object in this shape:
+{"readable": true, "product": "short product name or null", "barcode": "digits printed under the barcode, or null", "ingredients_text": "the ingredients statement copied exactly as printed, or null",
+ "ingredients": [{"name": "ingredient name as printed", "code": "INS number like 322 or 472e, or null", "parent": "compound ingredient or additive class it sits inside, or null", "pct": number or null, "kind": "whole|culinary|fortificant|refined|additive_mild|additive_cosmetic", "note": "3-6 word plain note or null"}],
+ "nip_per_100g": {"energy_kj": n, "protein": n, "fat": n, "sat_fat": n, "carbs": n, "sugars": n, "fibre": n, "sodium": n, "servings": servings per package as a number or null, "serving_g": serving size in grams or mL as a number or null},
+ "notes": ["up to 2 short sentences a strict whole-food eater should know that the ingredient list alone would not show, e.g. a misleading front-of-pack claim"]}
+
+Rules:
+- List every ingredient as a flat list of leaves, in label order. Expand compound ingredients ("chocolate (sugar, cocoa mass)") into their parts with parent set. For "emulsifier (322, 471)" give each code as its own item with parent "emulsifier".
+- kind: whole = a recognisable whole food, water, live cultures; culinary = salt, sugar, honey, oils, butter, vinegar; fortificant = added vitamins or minerals; refined = white flour, starches, syrups, maltodextrin, milk solids, protein isolates, gluten; additive_mild = acids, raising agents, vitamin C/E antioxidants, enzymes, alkali treatment; additive_cosmetic = emulsifiers, thickeners, gums, flavours (natural or not), colours, sweeteners, preservatives, flavour enhancers, yeast extract, modified starch, hydrogenated fats.
+- NIP numbers are per 100 g (or 100 mL) only, not per serve. Sodium in mg. Use null for anything you cannot read. Do not guess values.
+- If there is no ingredients list you can read, set readable to false and ingredients to [].
+- If the product clearly isn't food or drink (shampoo, cleaning products, batteries, pet food, cosmetics, a shoe, a cat…), also add "is_food": false and "not_food": {"item": "what it is, 1-3 words", "quip": "one or two witty, specific sentences on why a person shouldn't eat this exact thing", "danger": true if swallowing it could cause real harm}. Otherwise add "is_food": true.`;
+  const PROMPT = `These photos show the packaging of one food product, most likely sold in New Zealand or Australia. One photo may show the ingredients list and another the Nutrition Information Panel (NIP).
+
+Read the label carefully. ${PROMPT_RULES}`;
+  const OCR_PROMPT = ocr => `Below is text recognised by a phone camera from the packaging of one food product, most likely sold in New Zealand or Australia. It contains recognition errors: fix obvious misreadings (e.g. "5ugar" is "sugar", "0" for "O") but never invent ingredients or numbers that aren't there. NIP tables may have columns per serve and per 100 g; use the per 100 g column.
+
+Recognised text:
+<<<
+${ocr.slice(0, 12000)}
+>>>
+
+${PROMPT_RULES}`;
+
+  function resultFromClaude(j) {
+    if (j && j.is_food === false && j.not_food && j.not_food.item) {
+      return { notFood: { item: String(j.not_food.item), quip: String(j.not_food.quip || "That's not food."), danger: !!j.not_food.danger } };
+    }
+    const leaves = Array.isArray(j?.ingredients) ? j.ingredients.filter(x => x && x.name).map(x => ({
+      name: String(x.name), code: x.code ? String(x.code) : null, parent: x.parent ? String(x.parent) : null,
+      parentClass: x.parent ? classWord(String(x.parent)) : null, pct: typeof x.pct === "number" ? x.pct : null,
+      kind: KIND_RANK[x.kind] !== undefined ? x.kind : null, note: x.note ? String(x.note) : null,
+    })) : [];
+    if (!leaves.length && j?.ingredients_text) leaves.push(...parseIngredients(String(j.ingredients_text)));
+    if (!leaves.length) return null;
+    const nipRaw = j.nip_per_100g || {};
+    const nip = {}; for (const k of ["energy_kj", "protein", "fat", "sat_fat", "carbs", "sugars", "fibre", "sodium", "servings", "serving_g"]) nip[k] = typeof nipRaw[k] === "number" ? nipRaw[k] : null;
+    const notes = Array.isArray(j.notes) ? j.notes.filter(s => typeof s === "string" && s.trim()).slice(0, 2) : [];
+    const r = analyse({ product: j.product, ingredientsText: j.ingredients_text, leaves, nip, notes });
+    const bc = typeof j.barcode === "string" ? j.barcode.replace(/\D/g, "") : "";
+    return { r, barcode: bc.length >= 8 ? bc : null };
+  }
+  const HIDE_CODES = ["not_granted", "sampling_disabled", "images_unavailable", "capability_disabled", "capability_removed", "not_declared"];
+
+  async function readOnPhone(signal) {
+    let text = "", rows = [];
+    for (let i = 0; i < photos.length; i++) {
+      if (signal.aborted) throw { code: "cancelled" };
+      const label = photos.length > 1 ? ` photo ${i + 1} of ${photos.length}` : "";
+      let out;
+      try {
+        out = await ocrImage(photos[i], m => {
+          if (m.status === "recognizing text") setStatus(`Reading the text${label}… ${Math.round(m.progress * 100)}%`);
+          else if (/load|initiali/i.test(m.status)) setStatus("Getting the text reader ready… (first time only)");
+        });
+      } catch (e) {
+        if (e?.code) throw e;
+        ocrWorker = null; throw { code: "ocr_missing" };
+      }
+      text += "\n\n" + out.text; rows = rows.concat(out.rows);
+    }
+    return { text, rows };
+  }
+
+  $("scan").onclick = async () => {
+    if (!photos.length) return;
+    ctl = new AbortController();
+    const signal = ctl.signal;
+    $("scan").disabled = true; $("stop").hidden = false;
+    // Look for a barcode in these photos too, so the result is saved to it.
+    if (!photoBarcode && window.ZXing) { for (const f of photos) { const c = await decodeBarcode(f); if (c) { photoBarcode = pendingBarcode = c; showBarcode(c, "new"); break; } } }
+    try {
+      // 1. Claude reads the photos directly.
+      if (sample && canImages) {
+        try {
+          setStatus("Reading the label… this usually takes 10–40 seconds.");
+          const out = resultFromClaude(await sample.json(PROMPT, { images: photos, signal }));
+          if (out?.notFood) { renderNotFood(out.notFood); setStatus(""); return; }
+          if (!out) { setStatus("Couldn't find a readable ingredients list. Try a closer, flatter photo with good light, or type it in.", true); return; }
+          finishResult(out.r, photoBarcode || out.barcode);
+          setStatus("Done. Check the ingredient list below against the pack.");
+          return;
+        } catch (e) {
+          if (!HIDE_CODES.includes(e?.code)) throw e;
+          canImages = false; setReaderNote();
+        }
+      }
+      // 2. Read the text on the phone.
+      const { text, rows } = await readOnPhone(signal);
+      if (!text.trim()) { setStatus("No text found in that photo. Get closer to the label, in good light, and hold steady.", true); return; }
+      // 2a. Claude tidies up the recognised text.
+      if (sample) {
+        try {
+          setStatus("Checking the label…");
+          const out = resultFromClaude(await sample.json(OCR_PROMPT(rows.join("\n") + "\n\n" + text), { signal, modelTier: "quick" }));
+          if (out?.notFood) { renderNotFood(out.notFood); setStatus(""); return; }
+          if (out) { finishResult(out.r, photoBarcode || out.barcode); setStatus("Done. Text was read on your phone, so check the ingredients below against the pack."); return; }
+        } catch (e) {
+          if (e?.code === "cancelled") throw e;
+          if (HIDE_CODES.includes(e?.code)) { sample = null; setReaderNote(); enableManualAdd(); }
+        }
+      }
+      // 2b. No Claude: pull the ingredients and NIP out of the text ourselves, and let the person correct it.
+      const nf = detectNotFood(text);
+      if (nf) { renderNotFood(nf); setStatus(""); return; }
+      const ex = extractLabel(text, rows);
+      fillTextForm("", ex.ingredients, ex.nip);
+      showTab("text");
+      if (!ex.ingredients) { setStatus("Couldn't find the word \"Ingredients\" in that photo. Photograph the ingredients list up close, or type it below.", true); return; }
+      const r = analyse({ product: null, ingredientsText: ex.ingredients, leaves: parseIngredients(ex.ingredients), nip: ex.nip });
+      finishResult(r, photoBarcode);
+      setStatus("Read on your phone. Phone text reading makes mistakes, so check the ingredients and numbers above against the pack. Fix anything wrong and tap Check ingredients.");
+    } catch (e) {
+      const code = e?.code;
+      if (code === "cancelled") setStatus("Stopped.");
+      else if (code === "ocr_missing") setStatus("The text reader didn't load. Check your connection and reopen the app, or type the ingredients in.", true);
+      else if (code === "rate_limited") setStatus("Too many scans in a short time. Wait a minute and try again.", true);
+      else if (code === "image_rejected") setStatus("That photo couldn't be used. Take a new photo with the camera button.", true);
+      else if (code === "invalid_json") setStatus("The label couldn't be read cleanly. Try again, or take a sharper photo.", true);
+      else setStatus("Something went wrong reading the label. Try again.", true);
+    } finally {
+      $("stop").hidden = true; $("scan").disabled = !photos.length;
+    }
+  };
+  $("stop").onclick = () => ctl?.abort();
+
+  function setReaderNote() {
+    $("reader-note").textContent = sample && canImages
+      ? "Labels are read by Claude."
+      : sample
+        ? "Text is read on your phone, then checked by Claude."
+        : "Text is read on your phone. Check the result against the pack.";
+  }
+
+  // ---------- Food log ----------
+  // Daily Intake reference values behind %DI on NZ/AU labels (FSANZ Standard 1.2.8, 8,700 kJ adult).
+  const NUTS = [
+    ["energy_kj", "Energy", "kJ", 8700, "ref"],
+    ["protein", "Protein", "g", 50, "target"],
+    ["fat", "Fat", "g", 70, "limit"],
+    ["sat_fat", "Saturated fat", "g", 24, "limit"],
+    ["carbs", "Carbohydrate", "g", 310, "ref"],
+    ["sugars", "Sugars", "g", 90, "limit"],
+    ["fibre", "Fibre", "g", 30, "target"],
+    ["sodium", "Sodium", "mg", 2300, "limit"],
+  ];
+  const DEFAULT_TARGETS = Object.fromEntries(NUTS.map(n => [n[0], n[3]]));
+  const LOG = { ready: false, mode: "local", days: {}, targets: { ...DEFAULT_TARGETS }, col: null, chain: Promise.resolve() };
+  const dayKey = d => { const x = new Date(d); return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); };
+  const shiftDay = (k, n) => { const [y, m, d] = k.split("-").map(Number); return dayKey(new Date(y, m - 1, d + n)); };
+  let viewDay = dayKey(Date.now());
+
+  function loadLocalLog() {
+    try { const j = JSON.parse(localStorage.getItem("na-log") || "{}"); LOG.days = j.days || {}; LOG.targets = { ...DEFAULT_TARGETS, ...(j.targets || {}) }; } catch {}
+  }
+  function saveLocalLog() { try { localStorage.setItem("na-log", JSON.stringify({ days: LOG.days, targets: LOG.targets })); } catch {} }
+
+  // Your log lives in your private space in the artifact's store (synced across your devices);
+  // falls back to this browser when the store isn't available.
+  async function initLog() {
+    const use = n => window.claude?.use ? window.claude.use(n) : Promise.resolve(null);
+    const [db, user] = await Promise.all([use("db"), use("user")]);
+    const uid = user ? await user.id().catch(() => null) : null;
+    const goLocal = () => { LOG.mode = "local"; loadLocalLog(); LOG.ready = true; renderTargets(); renderLog(); };
+    if (!db || !uid) return goLocal();
+    LOG.mode = "db";
+    LOG.col = db.collection("data/users/" + uid);
+    LOG.col.where("type", "==", "day").orderBy("date", "desc").limit(90).onSnapshot(snap => {
+      const days = {};
+      snap.docs.forEach(d => { const v = d.data(); if (v?.date) days[v.date] = v.entries || []; });
+      LOG.days = days; LOG.ready = true; renderLog();
+    }, goLocal);
+    LOG.col.doc("targets").onSnapshot(snap => {
+      const t = snap.exists ? { ...snap.data() } : {};
+      LOG.targets = { ...DEFAULT_TARGETS, ...t }; renderTargets(); if (LOG.ready) renderLog();
+    }, () => {});
+  }
+
+  function saveError(e) {
+    const st = $("add-status");
+    st.className = "status err";
+    st.textContent = e?.code === "quota_exceeded" ? "Your log is full. Delete some old entries to keep logging." : "Couldn't save that change. Check your connection and try again.";
+  }
+  function persistDay(key) {
+    if (LOG.mode !== "db") { saveLocalLog(); return; }
+    const entries = LOG.days[key] || [];
+    const ref = LOG.col.doc("day-" + key);
+    LOG.chain = LOG.chain.then(() => entries.length ? ref.set({ type: "day", date: key, entries }) : ref.delete()).catch(saveError);
+  }
+  function persistTargets() {
+    if (LOG.mode !== "db") { saveLocalLog(); return; }
+    const ref = LOG.col.doc("targets");
+    LOG.chain = LOG.chain.then(() => ref.set({ ...LOG.targets })).catch(saveError);
+  }
+
+  function addEntry(entry, key) {
+    entry.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    entry.at = Date.now();
+    LOG.days[key] = [...(LOG.days[key] || []), entry];
+    persistDay(key); renderLog();
+  }
+  function removeEntry(key, id) {
+    LOG.days[key] = (LOG.days[key] || []).filter(e => e.id !== id);
+    persistDay(key); renderLog();
+  }
+
+  function portion(per100, grams) {
+    const out = {};
+    for (const [k] of NUTS) out[k] = per100 && typeof per100[k] === "number" ? Math.round(per100[k] * grams / 10) / 10 : null;
+    return out;
+  }
+  // Ultra-processed food only: ~50 min per serve (label serve when known, otherwise the logged amount counts as one serve).
+  function entryMinutes(tier, grams, servingG) {
+    if (tier !== 5) return 0;
+    return Math.round(MIN_PER_SERVING * (servingG ? grams / servingG : 1));
+  }
+
+  // "Add to today's log" on a scan result.
+  document.addEventListener("click", e => {
+    if (e.target.id !== "log-add" || !current) return;
+    const msg = $("log-msg");
+    const g = parseFloat($("log-grams").value);
+    if (!(g > 0)) { msg.textContent = "Enter how many grams you ate."; return; }
+    if (!LOG.ready) { msg.textContent = "Your log is still loading. Try again in a moment."; return; }
+    const r = current, mins = entryMinutes(r.tier, g, r.nip?.serving_g);
+    addEntry({ name: r.product || "Scanned product", grams: g, tier: r.tier, n: portion(r.nip, g), minutes: mins, src: "label" }, dayKey(Date.now()));
+    msg.textContent = mins && tone === "blunt" ? `Logged. That cost you about ${mins} minutes.` : "Added to today's log.";
+  });
+
+  const QUICK_PROMPT = text => `Someone ate the following and wants to log it in a food diary. Estimate each food separately.
+
+What they ate: <<${text.slice(0, 500)}>>
+
+Reply with only JSON: {"items": [{"name": "short food name", "grams": number eaten, "tier": 1-5, "per100": {"energy_kj": n, "protein": n, "fat": n, "sat_fat": n, "carbs": n, "sugars": n, "fibre": n, "sodium": n}}]}
+- Use typical portion weights when no amount is given (1 medium banana is about 120 g, 1 large egg about 50 g).
+- per100 values are per 100 g, sodium in mg, from standard food composition data.
+- If what they describe isn't food or drink, reply {"items": [], "not_food": "one or two witty sentences on why not to eat that exact thing; if swallowing it could cause real harm, be serious and say to call the Poisons Centre (NZ 0800 764 766, AU 13 11 26)"}.
+- tier is how processed it is: 1 one whole ingredient (egg, apple, plain rice, fresh meat); 2 several whole foods only; 3 whole foods cooked with salt, sugar, oil or butter (home cooking); 4 processed (bakery bread, cheese, canned food); 5 ultra-processed (soft drinks, packaged snacks, sweetened cereal, supermarket sliced bread, instant noodles, fast food, ham, sausages, flavoured yoghurt).`;
+
+  function enableManualAdd() {
+    $("add-manual").hidden = false;
+    $("add-hint").textContent = "Name the food, its weight and how processed it is. To log packaged food with full nutrition, scan it and tap \"Add to today's log\".";
+  }
+
+  $("add-go").onclick = async () => {
+    const text = $("add-text").value.trim(), st = $("add-status");
+    st.className = "status";
+    if (!text) { st.textContent = "Type what you ate first."; st.className = "status err"; return; }
+    if (!LOG.ready) { st.textContent = "Your log is still loading. Try again in a moment."; return; }
+    const nf = detectNotFood(text);
+    if (nf) { st.className = "status" + (nf.danger ? " err" : ""); st.textContent = nf.quip + (nf.danger ? " " + POISON_LINE : ""); return; }
+    if (!sample) {
+      const g = parseFloat($("add-grams").value) || 100, tier = +$("add-tier").value;
+      addEntry({ name: text, grams: g, tier, n: portion(null, g), minutes: entryMinutes(tier, g, null), src: "manual" }, viewDay);
+      $("add-text").value = "";
+      st.textContent = "Added. Nutrition isn't counted for foods entered by hand.";
+      return;
+    }
+    $("add-go").disabled = true; st.textContent = "Estimating…";
+    try {
+      const j = await sample.json(QUICK_PROMPT(text), { modelTier: "quick" });
+      if (j?.not_food) { st.textContent = String(j.not_food); return; }
+      const items = (Array.isArray(j?.items) ? j.items : []).filter(i => i && i.name && +i.grams > 0);
+      if (!items.length) { st.className = "status err"; st.textContent = "Couldn't work out what that was. Name the food and amount, like \"1 apple\"."; return; }
+      for (const i of items) {
+        const tier = Math.min(5, Math.max(1, Math.round(+i.tier || 3))), g = Math.round(+i.grams);
+        addEntry({ name: String(i.name), grams: g, tier, n: portion(i.per100, g), minutes: entryMinutes(tier, g, null), src: "estimate" }, viewDay);
+      }
+      $("add-text").value = "";
+      st.textContent = `Added ${items.length} item${items.length > 1 ? "s" : ""}. Nutrition is estimated.`;
+    } catch (e) {
+      st.className = "status err";
+      if (e?.code === "not_granted" || e?.code === "sampling_disabled") { sample = null; enableManualAdd(); st.textContent = "Estimating isn't available. Enter the weight and processing step, then tap Add."; }
+      else st.textContent = e?.code === "rate_limited" ? "Too many requests. Wait a minute and try again." : "Couldn't estimate that. Try again.";
+    } finally { $("add-go").disabled = false; }
+  };
+  $("add-text").addEventListener("keydown", e => { if (e.key === "Enter") $("add-go").click(); });
+
+  function totals(entries) {
+    const t = Object.fromEntries(NUTS.map(n => [n[0], 0]));
+    const byTier = [0, 0, 0, 0, 0, 0];
+    let minutes = 0;
+    for (const e of entries) {
+      for (const [k] of NUTS) t[k] += e.n?.[k] || 0;
+      minutes += e.minutes || 0;
+      byTier[e.tier] += e.n?.energy_kj || 0;
+    }
+    return { t, minutes, byTier };
+  }
+  function dayLabel(k) {
+    const today = dayKey(Date.now());
+    if (k === today) return "Today";
+    if (k === shiftDay(today, -1)) return "Yesterday";
+    const [y, m, d] = k.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  }
+
+  function renderLog() {
+    const today = dayKey(Date.now());
+    $("day-title").textContent = dayLabel(viewDay);
+    $("day-next").disabled = viewDay >= today;
+    if (!LOG.ready) return;
+    const entries = LOG.days[viewDay] || [];
+    const { t, minutes, byTier } = totals(entries);
+    const blunt = tone === "blunt", isToday = viewDay === today;
+    const kjAll = byTier.reduce((a, b) => a + b, 0);
+    const upfShare = kjAll ? Math.round(byTier[5] / kjAll * 100) : 0;
+    const worst = entries.length ? Math.max(...entries.map(e => e.tier)) : 1;
+    const [ln, lu] = minutes >= 90 ? [Math.round(minutes / 6) / 10, "hours"] : [minutes, "minutes"];
+
+    let line;
+    if (!entries.length) line = isToday ? "Nothing logged yet today. Scan a label, or add a food below." : "Nothing logged on this day.";
+    else if (minutes) line = blunt
+      ? `${isToday ? "Today" : "That day"}, ultra-processed food took about ${ln} ${lu} off your life.${kjAll ? ` ${upfShare}% of your energy came from food engineered in a factory.` : ""}`
+      : `Estimated life cost of the ultra-processed food logged.${kjAll ? ` ${upfShare}% of energy came from ultra-processed food.` : ""}`;
+    else line = blunt ? "Nothing ultra-processed. Not a minute lost. This is how you get your time back." : "No ultra-processed food logged.";
+
+    const shareBar = kjAll ? `<div class="share" aria-label="Energy by processing step">
+        <div class="track">${[1, 2, 3, 4, 5].filter(i => byTier[i]).map(i => `<span style="width:${byTier[i] / kjAll * 100}%;background:var(--t${i})"></span>`).join("")}</div>
+        <div class="legend">${[1, 2, 3, 4, 5].filter(i => byTier[i]).map(i => `<span><i style="background:var(--t${i})"></i>${TIERS[i].short} ${Math.round(byTier[i] / kjAll * 100)}% of kJ</span>`).join("")}</div>
+      </div>` : "";
+
+    const hasNutrition = entries.some(e => e.n && Object.values(e.n).some(v => v != null));
+    const bars = hasNutrition ? `<div class="bars">${NUTS.map(([k, label, unit, , kind]) => {
+      const target = LOG.targets[k] || DEFAULT_TARGETS[k], v = t[k], pct = v / target * 100;
+      const cls = kind === "limit" ? (pct > 100 ? "over" : pct >= 75 ? "warn" : "ok") : kind === "target" && pct >= 100 ? "ok" : "prog";
+      const word = kind === "limit" ? (pct > 100 ? "over" : "of limit") : kind === "target" ? "of goal" : "of DI";
+      return `<div class="bar-row ${cls}"><span>${label}</span><div class="track"><span style="width:${Math.min(100, pct)}%"></span></div><span class="v">${Math.round(v)} ${unit} <b>${Math.round(pct)}%</b><span class="hint w"> ${word}</span></span></div>`;
+    }).join("")}</div>` : "";
+
+    const over = NUTS.filter(([k, , , , kind]) => kind === "limit" && t[k] > (LOG.targets[k] || DEFAULT_TARGETS[k])).map(n => n[1].toLowerCase());
+    const overLine = over.length ? `<p style="margin:0;color:var(--t5);font-weight:600">${blunt ? `Over your ${over.join(", ")} limit${over.length > 1 ? "s" : ""}. Your body has to deal with every gram of it.` : `Over the daily limit for ${over.join(", ")}.`}</p>` : "";
+
+    const list = entries.length ? `<ul class="entries">${entries.map(e => `<li style="--tier:var(--t${e.tier})">
+        <span class="tb" title="${TIERS[e.tier].name}">${e.tier}</span>
+        <span class="nm">${esc(e.name)}<small>${Math.round(e.grams)} g${e.n?.energy_kj ? " · " + Math.round(e.n.energy_kj) + " kJ" : ""} · ${TIERS[e.tier].name}${e.src === "estimate" ? " · estimated" : ""}</small></span>
+        <span class="min">${e.minutes ? "−" + e.minutes + " min" : ""}</span>
+        <button class="del" data-del="${esc(e.id)}" aria-label="Remove ${esc(e.name)}">×</button></li>`).join("")}</ul>` : "";
+
+    const el = $("today");
+    el.className = "today" + (minutes ? " bad" : "");
+    el.style.setProperty("--tier", `var(--t${minutes ? 5 : worst <= 2 ? 1 : worst})`);
+    el.innerHTML = `
+      <div class="cost">
+        <span class="eyebrow">${blunt ? "Life lost" : "Estimated life cost"}${LOG.mode === "local" ? " · saved on this device only" : ""}</span>
+        <div class="big">${minutes ? "−" + ln : "0"}<small>${minutes ? lu : "minutes"}</small></div>
+        <p>${esc(line)}</p>
+      </div>
+      ${shareBar}${overLine}${bars}${list}`;
+    renderWeek();
+  }
+  $("today").addEventListener("click", e => { const b = e.target.closest("[data-del]"); if (b) removeEntry(viewDay, b.dataset.del); });
+
+  function renderWeek() {
+    const today = dayKey(Date.now());
+    const keys = Array.from({ length: 7 }, (_, i) => shiftDay(today, i - 6));
+    const mins = keys.map(k => totals(LOG.days[k] || []).minutes);
+    const max = Math.max(60, ...mins);
+    $("week").innerHTML = keys.map((k, i) => {
+      const has = (LOG.days[k] || []).length;
+      const [y, m, d] = k.split("-").map(Number);
+      const wd = new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short" });
+      return `<div class="col ${k === viewDay ? "sel" : ""}"><button data-day="${k}" aria-label="${dayLabel(k)}: ${has ? mins[i] + " minutes lost" : "nothing logged"}">
+        <span class="n">${has ? (mins[i] ? "−" + mins[i] : "0") : "–"}</span>
+        <span class="b ${mins[i] ? "" : "zero"}" style="height:${has ? Math.max(3, mins[i] / max * 80) : 0}px"></span>
+        <span>${wd}</span></button></div>`;
+    }).join("");
+  }
+  $("week").addEventListener("click", e => { const b = e.target.closest("[data-day]"); if (b) { viewDay = b.dataset.day; renderLog(); } });
+  $("day-prev").onclick = () => { viewDay = shiftDay(viewDay, -1); renderLog(); };
+  $("day-next").onclick = () => { if (viewDay < dayKey(Date.now())) { viewDay = shiftDay(viewDay, 1); renderLog(); } };
+
+  function renderTargets() {
+    $("targets").innerHTML = NUTS.map(([k, label, unit, , kind]) => `<label for="tg-${k}">${label} (${unit})${kind === "limit" ? " · limit" : kind === "target" ? " · goal" : ""}<input id="tg-${k}" data-tg="${k}" type="number" inputmode="decimal" value="${LOG.targets[k]}"></label>`).join("");
+  }
+  $("targets").addEventListener("change", e => {
+    const k = e.target.dataset.tg; if (!k) return;
+    const v = parseFloat(e.target.value);
+    if (!(v > 0)) { e.target.value = LOG.targets[k]; return; }
+    LOG.targets[k] = v; persistTargets(); renderLog();
+  });
+  $("targets-reset").onclick = () => { LOG.targets = { ...DEFAULT_TARGETS }; persistTargets(); renderTargets(); renderLog(); };
+
+  function showView(v) {
+    $("nav-scan").setAttribute("aria-selected", v === "scan");
+    $("nav-log").setAttribute("aria-selected", v === "log");
+    $("view-scan").hidden = v !== "scan";
+    $("view-log").hidden = v !== "log";
+    if (v === "log") { viewDay = dayKey(Date.now()); renderLog(); }
+    window.scrollTo({ top: 0 });
+  }
+  $("nav-scan").onclick = () => showView("scan");
+  $("nav-log").onclick = () => showView("log");
+
+  // ---------- Boot ----------
+  $("tone-blunt").onclick = () => setTone("blunt");
+  $("tone-calm").onclick = () => setTone("calm");
+  setTone(tone);
+  let tab = "photo"; try { tab = localStorage.getItem("nothing-added-tab") || "photo"; } catch {}
+  showTab(tab);
+  render(analyse({ product: EXAMPLES[1].product, ingredientsText: EXAMPLES[1].text, leaves: parseIngredients(EXAMPLES[1].text), nip: EXAMPLES[1].nip, example: true }));
+  renderHist();
+  renderTargets();
+  initLog();
+  setReaderNote();
+  (window.claude?.use ? window.claude.use("sample") : Promise.resolve(null)).then(async s => {
+    if (!s) { enableManualAdd(); setReaderNote(); return; }
+    const lim = await s.limits().catch(() => null);
+    sample = s;
+    canImages = !!lim?.images;
+    if (canImages) maxImages = Math.min(3, lim.images.maxCount || 3);
+    setReaderNote();
+  });
+
+  // Exposed for quick checks in the console.
+  window.__nothingAdded = { parseIngredients, analyse, decodeBarcode, extractLabel };
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+</script>
+</body>
+</html>
