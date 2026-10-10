@@ -241,6 +241,47 @@ details.more > summary { cursor: pointer; font-family: var(--display); font-weig
 .bodyline.bad { border-left-color: var(--t5); }
 em.long { display: block; font-style: normal; font-weight: 600; font-size: 14px; color: var(--ink); margin-top: 4px; }
 .bad em.long, li.bad em.long { color: var(--t5); }
+details.sci { margin-top: 4px; }
+details.sci > summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; }
+details.sci p, details.sci li { font-size: 13.5px; color: var(--muted); }
+details.sci p { margin: 6px 0; }
+details.sci ul, details.sci ol { margin: 6px 0; padding-left: 18px; display: grid; gap: 4px; }
+details.sci ul li { color: var(--ink); }
+.refs a { color: var(--accent); }
+.fx .now { font-weight: 600; }
+.fx li > span { font-weight: 600; }
+.vtitle { font-size: 28px; font-weight: 900; font-stretch: 72%; text-transform: uppercase; }
+.rx-head { display: grid; gap: 10px; }
+.rx-head .hint { margin: 0; }
+.rx-ctl { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 14px; }
+.rx-ctl label { display: flex; align-items: center; gap: 6px; }
+.rx-ctl input, .rx-ctl select, #rx-want { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 8px 10px; font: 16px var(--body); }
+.rx-ctl input { width: 72px; }
+#rx-want { flex: 1 1 200px; min-width: 0; }
+.rx-list { display: grid; gap: 8px; }
+details.rx { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+details.rx[open] { border-color: var(--ink); }
+details.rx > summary { list-style: none; display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: center; padding: 12px 14px; cursor: pointer; }
+details.rx > summary::-webkit-details-marker { display: none; }
+.rx-nm { font-weight: 600; font-size: 16px; min-width: 0; }
+.rx-nm small { display: block; font-weight: 400; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag-mine { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; background: var(--accent); color: var(--accent-ink); padding: 1px 6px; border-radius: 3px; }
+.rx-body { display: grid; gap: 10px; padding: 0 14px 14px; }
+.rx-body h4 { margin: 4px 0 0; font-family: var(--display); font-weight: 800; font-stretch: 80%; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; }
+.rx-ing { list-style: none; margin: 0; padding: 0; display: grid; }
+.rx-ing li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.rx-ing small { color: var(--muted); }
+.rx-ing a { color: var(--accent); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rx-steps { margin: 0; padding-left: 22px; display: grid; gap: 8px; font-size: 16px; }
+.rx-msg { margin: 0; }
+.shoplist { background: var(--surface); border: 2px solid var(--ink); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
+.shoplist h4 { margin: 0; font-family: var(--display); font-weight: 800; font-stretch: 80%; text-transform: uppercase; font-size: 15px; }
+.shoplist ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.shoplist label { display: flex; gap: 10px; align-items: baseline; font-size: 16px; }
+.shoplist label.done { text-decoration: line-through; color: var(--muted); }
+.shoplist input { width: 20px; height: 20px; accent-color: var(--accent); }
+.shoplist small { color: var(--muted); }
+.nav button { max-width: 160px; }
 .tone { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
 .tone .tabs { margin: 0; }
 .tone .tabs button { padding: 4px 10px; font-size: 13px; }
@@ -299,6 +340,7 @@ details p { color: var(--muted); font-size: 14px; }
   <nav class="nav" role="tablist" aria-label="Sections">
     <button id="nav-scan" role="tab" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V6a2 2 0 0 1 2-2h2M17 4h2a2 2 0 0 1 2 2v2M21 16v2a2 2 0 0 1-2 2h-2M7 20H5a2 2 0 0 1-2-2v-2"/><path d="M7 9h10M7 12h10M7 15h6"/></svg>Scan</button>
     <button id="nav-log" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Today's log</button>
+    <button id="nav-recipes" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11h16v2a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"/><path d="M2 11h20M9 7c0-1.5 1-2 1-3.5M14 7c0-1.5 1-2 1-3.5"/></svg>Recipes</button>
   </nav>
 
   <div id="view-scan" class="view">
@@ -387,6 +429,31 @@ details p { color: var(--muted); font-size: 14px; }
     </ol>
     <p>The purity score (0–100) ranks products within each step: fewer and gentler additions score higher. Additive numbers on NZ and AU labels are International Numbering System (INS) codes, the same as E-numbers without the E. Ingredients are listed by weight, heaviest first. NIP levels use per-100g food thresholds: sugars over 22.5 g is high and 5 g or under is low; sodium over 600 mg is high and 120 mg or under is low.</p>
   </details>
+  </div>
+
+  <div id="view-recipes" class="view" hidden>
+    <section class="rx-head">
+      <h2 class="vtitle">Recipes</h2>
+      <p class="hint">Whole foods only. Easiest first. Prices are rough estimates: tap an ingredient to check today's price at your supermarket.</p>
+      <div class="rx-ctl">
+        <label for="rx-budget">Budget per meal $<input id="rx-budget" type="number" inputmode="decimal" min="1" step="1" value="10"></label>
+        <label for="rx-people">People <input id="rx-people" type="number" inputmode="numeric" min="1" max="12" value="1"></label>
+        <label for="rx-shop">Shop <select id="rx-shop"><option value="paknsave">Pak'nSave</option><option value="woolworths">Woolworths</option><option value="newworld">New World</option></select></label>
+      </div>
+      <div class="examples" id="rx-filters">
+        <button class="chip" data-f="nocook">No cooking</button>
+        <button class="chip" data-f="onepan">One pan</button>
+        <button class="chip" data-f="few">5 ingredients or fewer</button>
+      </div>
+    </section>
+    <section id="shop-list" class="shoplist" hidden></section>
+    <section id="rx-make" class="add" hidden>
+      <span class="eyebrow">Make me a recipe</span>
+      <div class="row"><input id="rx-want" type="text" placeholder="e.g. something warm with chicken"><button id="rx-go" class="btn primary">Make it</button></div>
+      <p id="rx-status" class="status" role="status"></p>
+    </section>
+    <p id="rx-count" class="hint" style="margin:0"></p>
+    <div id="rx-list" class="rx-list"></div>
   </div>
 
   <div id="view-log" class="view" hidden>
@@ -878,7 +945,7 @@ details p { color: var(--muted); font-size: 14px; }
         ${blunt ? `<p class="punch">${esc(BLUNT[r.tier].punch)}</p>` : ""}
         ${blunt && r.tier === 5 ? `<p class="lifechip">≈ −${MIN_PER_SERVING} min of life a serve <span class="hint">· rough estimate, see details</span></p>` : ""}
         ${facts.length ? `<ul class="facts">${facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
-        ${(() => { const b = bodyLine(r); return b ? `<p class="bodyline ${b.bad ? "bad" : "good"}"><b>Your body${b.per === "a serve" ? ", per serve" : ""}:</b> ${esc(b.title)}. ${esc(b.text)}${b.long ? `<em class="long">${esc(b.long)}</em>` : ""}</p>` : ""; })()}
+        ${(() => { const b = bodyLine(r); return b ? `<div class="bodyline ${b.bad ? "bad" : "good"}"><b>Your body${b.per === "a serve" ? ", per serve" : ""}:</b> ${esc(b[tone] || b.blunt)}${sciHTML(b.sci)}</div>` : ""; })()}
         ${source ? `<p class="hint" style="margin:0">${esc(source)}</p>` : ""}
         <div class="next">
           <p class="next-line">${esc(NEXT[blunt ? "blunt" : "calm"][r.tier])}</p>
@@ -891,7 +958,7 @@ details p { color: var(--muted); font-size: 14px; }
             <div class="ladder" aria-label="Processing scale, step ${r.tier} of 5">${ladder}</div>
             ${blunt ? `<p>${esc(BLUNT[r.tier].line)}</p>` : `<p>${esc(T.blurb)}</p>`}
             ${blunt ? lifeHTML(r) : ""}
-            ${(() => { const fx = bodyEffects(portion(r.nip, r.nip?.serving_g || 100), r.tier, riskFlags(r)); return fx.length ? `<div class="sect"><h4>What it does to your body</h4><ul class="fx">${fx.map(e => `<li class="${e.bad ? "bad" : "good"}"><b>${esc(e.title)}</b><span>${esc(e.text)}</span>${e.long ? `<em class="long">${esc(e.long)}</em>` : ""}</li>`).join("")}</ul>${LONG_NOTE}</div>` : ""; })()}
+            ${(() => { const fx = bodyEffects(portion(r.nip, r.nip?.serving_g || 100), r.tier, riskFlags(r)); return fx.length ? `<div class="sect"><h4>What it does to your body</h4><ul class="fx">${fx.map(e => fxItem(e)).join("")}</ul></div>` : ""; })()}
             ${rest.length ? `<div class="sect"><h4>More from the label</h4><ul class="checks">${rest.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>` : ""}
             ${EVIDENCE[r.tier] ? `<div class="evidence"><h4 style="margin:0;font-family:var(--display);text-transform:uppercase;font-stretch:80%">${EVIDENCE[r.tier].head}</h4><ul>${EVIDENCE[r.tier].items.map(x => `<li>${esc(x)}</li>`).join("")}</ul><span class="src">${esc(EVIDENCE[r.tier].src)}</span></div>` : ""}
             <div class="sect"><h4>Ingredients · ${r.items.length}</h4>
@@ -1526,6 +1593,209 @@ ${PROMPT_RULES}`;
     else finishResult(r, r.barcode);
   });
 
+  // ---------- Recipes ----------
+  // Whole foods only, few steps. Prices are rough per-serve estimates in NZD; nutrition is per serve, estimated.
+  // ing: [ingredient, amount, price per serve, supermarket search term]
+  const RECIPES = [
+    { id: "oats", name: "Overnight oats", minutes: 5, tags: ["nocook"], tier: 2, weight: 350,
+      ing: [["Rolled oats", "½ cup (50 g)", 0.25, "rolled oats"], ["Milk", "⅔ cup (150 ml)", 0.35, "milk"], ["Banana", "1", 0.45, "bananas"], ["Frozen berries", "⅓ cup (50 g)", 0.50, "frozen berries"]],
+      steps: ["Stir the oats and milk together in a jar or bowl.", "Slice the banana on top. Add the berries.", "Cover and leave in the fridge overnight. Eat cold."],
+      n: { energy_kj: 1730, protein: 12.5, fat: 9, sat_fat: 3.5, carbs: 65, sugars: 28, fibre: 10, sodium: 80 } },
+    { id: "fruitpb", name: "Fruit and peanut butter plate", minutes: 3, tags: ["nocook"], tier: 2, weight: 330,
+      ing: [["Apple", "1", 0.60, "apples"], ["Banana", "1", 0.45, "bananas"], ["Peanut butter, 100% peanuts", "2 tbsp (30 g)", 0.40, "peanut butter 100% peanuts"]],
+      steps: ["Slice the apple and banana.", "Dip them in the peanut butter."],
+      n: { energy_kj: 1610, protein: 9.5, fat: 15, sat_fat: 3, carbs: 56, sugars: 37, fibre: 9.5, sodium: 10 } },
+    { id: "yog", name: "Yoghurt, oats and berries", minutes: 3, tags: ["nocook"], tier: 2, weight: 280,
+      ing: [["Plain unsweetened yoghurt", "⅔ cup (150 g)", 0.90, "plain unsweetened yoghurt"], ["Rolled oats", "¼ cup (30 g)", 0.15, "rolled oats"], ["Frozen berries", "½ cup (80 g)", 0.80, "frozen berries"], ["Almonds", "small handful (20 g)", 0.60, "almonds"]],
+      steps: ["Spoon the yoghurt into a bowl.", "Top with the oats, berries and almonds."],
+      n: { energy_kj: 1610, protein: 15.5, fat: 18, sat_fat: 5, carbs: 40, sugars: 15, fibre: 8.5, sodium: 80 } },
+    { id: "eggspin", name: "Scrambled eggs with spinach", minutes: 10, tags: ["onepan"], tier: 3, weight: 260,
+      ing: [["Eggs", "3", 2.40, "eggs"], ["Frozen spinach", "1 cup (100 g)", 0.40, "frozen spinach"], ["Butter", "2 tsp (10 g)", 0.20, "butter"]],
+      steps: ["Melt the butter in a pan on medium heat.", "Add the spinach and stir until hot.", "Crack in the eggs and stir gently until just set. Add salt and pepper."],
+      n: { energy_kj: 1400, protein: 22, fat: 23, sat_fat: 9.5, carbs: 3, sugars: 1, fibre: 2.5, sodium: 290 } },
+    { id: "omelette", name: "Onion and capsicum omelette", minutes: 10, tags: ["onepan"], tier: 3, weight: 300,
+      ing: [["Eggs", "3", 2.40, "eggs"], ["Onion", "½", 0.15, "onions"], ["Capsicum", "½", 1.00, "capsicum"], ["Olive oil", "1 tsp", 0.07, "olive oil"]],
+      steps: ["Chop the onion and capsicum.", "Fry them in the oil for 3 minutes.", "Beat the eggs, pour them in and cook until set. Fold and serve."],
+      n: { energy_kj: 1340, protein: 20, fat: 20, sat_fat: 5, carbs: 8, sugars: 5, fibre: 2.5, sodium: 220 } },
+    { id: "potsalad", name: "Warm potato, egg and pea salad", minutes: 20, tags: ["onepan"], tier: 3, weight: 500,
+      ing: [["Potatoes", "2 medium (300 g)", 0.75, "potatoes"], ["Eggs", "2", 1.60, "eggs"], ["Frozen peas", "½ cup (80 g)", 0.35, "frozen peas"], ["Olive oil", "2 tsp", 0.14, "olive oil"], ["Lemon", "½", 0.50, "lemons"]],
+      steps: ["Boil the potatoes in chunks for 15 minutes. Add the eggs for the last 9 minutes and the peas for the last 2.", "Drain. Peel and halve the eggs.", "Toss everything with the oil, a squeeze of lemon, salt and pepper."],
+      n: { energy_kj: 2230, protein: 23, fat: 21, sat_fat: 4, carbs: 58, sugars: 4, fibre: 9, sodium: 160 } },
+    { id: "dahl", name: "Red lentil dahl with rice", minutes: 25, tags: ["onepan"], tier: 3, weight: 450,
+      ing: [["Red lentils", "⅓ cup (75 g)", 0.55, "red lentils"], ["Tinned tomatoes", "½ can", 0.60, "chopped tomatoes"], ["Onion", "½", 0.15, "onions"], ["Garlic", "1 clove", 0.10, "garlic"], ["Ground cumin and turmeric", "1 tsp each", 0.15, "ground cumin"], ["Frozen spinach", "½ cup", 0.20, "frozen spinach"], ["Brown rice", "¼ cup dry (50 g)", 0.20, "brown rice"], ["Olive oil", "1 tsp", 0.07, "olive oil"]],
+      steps: ["Fry the chopped onion and garlic in the oil for 3 minutes. Start the rice cooking.", "Add the spices, lentils, tomatoes and 1 cup of water. Simmer 20 minutes, stirring now and then.", "Stir in the spinach. Serve over the rice."],
+      n: { energy_kj: 2200, protein: 24, fat: 7, sat_fat: 1, carbs: 85, sugars: 9, fibre: 13, sodium: 300 } },
+    { id: "chickpea", name: "Smoky chickpea and tomato stew", minutes: 25, tags: ["onepan"], tier: 3, weight: 500,
+      ing: [["Chickpeas", "½ can", 0.75, "chickpeas"], ["Tinned tomatoes", "½ can", 0.60, "chopped tomatoes"], ["Onion", "½", 0.15, "onions"], ["Garlic", "1 clove", 0.10, "garlic"], ["Smoked paprika", "1 tsp", 0.10, "smoked paprika"], ["Frozen spinach", "½ cup", 0.20, "frozen spinach"], ["Olive oil", "1 tbsp", 0.20, "olive oil"], ["Brown rice", "¼ cup dry (50 g)", 0.20, "brown rice"]],
+      steps: ["Fry the chopped onion and garlic in the oil for 3 minutes. Start the rice cooking.", "Add the paprika, drained chickpeas and tomatoes. Simmer 15 minutes.", "Stir in the spinach. Serve over the rice."],
+      n: { energy_kj: 2400, protein: 20, fat: 15, sat_fat: 2, carbs: 75, sugars: 10, fibre: 17, sodium: 350 } },
+    { id: "tuna", name: "Tuna, rice and veg bowl", minutes: 30, tags: [], tier: 3, weight: 450,
+      ing: [["Brown rice", "⅓ cup dry (75 g)", 0.30, "brown rice"], ["Tuna in springwater", "1 can (185 g)", 2.50, "tuna in springwater"], ["Frozen mixed veg", "1 cup (150 g)", 0.60, "frozen mixed vegetables"], ["Olive oil", "1 tsp", 0.07, "olive oil"], ["Lemon", "½", 0.50, "lemons"]],
+      steps: ["Cook the rice, or use leftover rice to make this a 5-minute meal.", "Microwave the frozen veg for 3 minutes.", "Drain the tuna. Pile everything in a bowl with the oil and a squeeze of lemon."],
+      n: { energy_kj: 2190, protein: 43, fat: 8, sat_fat: 1.5, carbs: 70, sugars: 7, fibre: 8.5, sodium: 500 } },
+    { id: "kumara", name: "Loaded baked kumara", minutes: 35, tags: [], tier: 3, weight: 500,
+      ing: [["Kumara", "1 medium (300 g)", 1.50, "kumara"], ["Chickpeas", "½ can", 0.75, "chickpeas"], ["Plain unsweetened yoghurt", "3 tbsp (60 g)", 0.36, "plain unsweetened yoghurt"], ["Olive oil", "1 tsp", 0.07, "olive oil"]],
+      steps: ["Prick the kumara. Bake at 200°C for 35 minutes, or microwave 8–10 minutes.", "Warm the drained chickpeas with the oil and a pinch of salt.", "Split the kumara open. Pile on the chickpeas and yoghurt."],
+      n: { energy_kj: 2215, protein: 15, fat: 10, sat_fat: 3, carbs: 80, sugars: 24, fibre: 16, sodium: 230 } },
+    { id: "beef", name: "Beef mince and veg over potato", minutes: 20, tags: ["onepan"], tier: 3, weight: 650,
+      ing: [["Beef mince", "150 g", 3.00, "beef mince"], ["Onion", "½", 0.15, "onions"], ["Frozen mixed veg", "1 cup (150 g)", 0.60, "frozen mixed vegetables"], ["Tinned tomatoes", "½ can", 0.60, "chopped tomatoes"], ["Potato", "1 large (250 g)", 0.65, "potatoes"]],
+      steps: ["Prick the potato and microwave for 6–8 minutes until soft.", "Brown the mince and chopped onion in a pan for 5 minutes.", "Add the veg and tomatoes. Simmer 8 minutes. Serve over the potato."],
+      n: { energy_kj: 2350, protein: 37, fat: 15.5, sat_fat: 6.5, carbs: 55, sugars: 9, fibre: 11, sodium: 180 } },
+    { id: "chicken", name: "One-tray chicken and veg", minutes: 40, tags: ["onepan"], tier: 3, weight: 650,
+      ing: [["Chicken thighs, skinless", "2 (200 g)", 2.60, "chicken thighs skinless"], ["Potato", "1 large (250 g)", 0.65, "potatoes"], ["Carrot", "1", 0.25, "carrots"], ["Broccoli", "⅓ head", 1.00, "broccoli"], ["Olive oil", "2 tsp", 0.14, "olive oil"], ["Dried mixed herbs", "1 tsp", 0.10, "mixed herbs"]],
+      steps: ["Heat the oven to 200°C.", "Chop the veg. Put everything on a tray with the oil, herbs, salt and pepper.", "Roast for 35 minutes, until the chicken is cooked through."],
+      n: { energy_kj: 2760, protein: 45, fat: 26, sat_fat: 5.5, carbs: 50, sugars: 8, fibre: 10, sodium: 300 } },
+  ];
+  const SHOPS = {
+    paknsave: ["Pak'nSave", q => `https://www.paknsave.co.nz/shop/search?q=${encodeURIComponent(q)}`],
+    woolworths: ["Woolworths", q => `https://www.woolworths.co.nz/shop/searchproducts?search=${encodeURIComponent(q)}`],
+    newworld: ["New World", q => `https://www.newworld.co.nz/shop/search?q=${encodeURIComponent(q)}`],
+  };
+  const RX = { budget: 10, people: 1, shop: "paknsave", filters: [] };
+  try { Object.assign(RX, JSON.parse(localStorage.getItem("na-rx") || "{}")); } catch {}
+  const saveRX = () => { try { localStorage.setItem("na-rx", JSON.stringify(RX)); } catch {} };
+  const myRecipes = () => { try { return JSON.parse(localStorage.getItem("na-myrecipes") || "[]"); } catch { return []; } };
+  const saveMyRecipes = list => { try { localStorage.setItem("na-myrecipes", JSON.stringify(list.slice(0, 20))); } catch {} };
+  const money = v => "$" + v.toFixed(2);
+  const rxCost = r => r.ing.reduce((a, i) => a + (+i[2] || 0), 0);
+  const rxEase = r => r.minutes + r.steps.length * 4 + r.ing.length * 2;
+
+  function renderRecipes() {
+    $("rx-budget").value = RX.budget; $("rx-people").value = RX.people; $("rx-shop").value = RX.shop;
+    document.querySelectorAll("#rx-filters .chip").forEach(c => c.classList.toggle("on", RX.filters.includes(c.dataset.f)));
+    const all = [...myRecipes().map(r => ({ ...r, mine: true })), ...RECIPES];
+    const fits = r => rxCost(r) * RX.people <= RX.budget + 0.001
+      && (!RX.filters.includes("nocook") || r.tags.includes("nocook"))
+      && (!RX.filters.includes("onepan") || r.tags.includes("onepan") || r.tags.includes("nocook"))
+      && (!RX.filters.includes("few") || r.ing.length <= 5);
+    const list = all.filter(fits).sort((a, b) => rxEase(a) - rxEase(b) || rxCost(a) - rxCost(b));
+    const shop = SHOPS[RX.shop] || SHOPS.paknsave;
+    $("rx-count").textContent = `${list.length} recipe${list.length === 1 ? "" : "s"} under ${money(RX.budget)}${RX.people > 1 ? ` for ${RX.people}` : ""} · easiest first`;
+    $("rx-list").innerHTML = list.length ? list.map(r => {
+      const cost = rxCost(r);
+      const fx = bodyEffects(r.n, r.tier, {}).slice(0, 2);
+      return `<details class="rx" data-rx="${esc(r.id)}" style="--tier:${tierColor(r.tier)}">
+        <summary>
+          <span class="lk-badge">${r.tier}</span>
+          <span class="rx-nm">${esc(r.name)}${r.mine ? ' <span class="tag-mine">Yours</span>' : ""}<small>${money(cost)} a serve · ${r.minutes} min · ${r.steps.length} steps · ${r.ing.length} ingredients</small></span>
+        </summary>
+        <div class="rx-body">
+          <h4>You need${RX.people > 1 ? ` (for ${RX.people})` : ""}</h4>
+          <ul class="rx-ing">${r.ing.map(([nm, qty, price, q]) => `<li><span>${esc(nm)} <small>${esc(qty)}${RX.people > 1 ? ` × ${RX.people}` : ""}</small></span><a href="${shop[1](q || nm)}" target="_blank" rel="noopener">~${money(price * RX.people)} · ${shop[0]} ›</a></li>`).join("")}</ul>
+          <h4>Steps</h4>
+          <ol class="rx-steps">${r.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>
+          ${fx.length ? `<ul class="fx">${fx.map(e => fxItem(e)).join("")}</ul>` : ""}
+          <div class="row">
+            <button class="btn" data-rx-shop="${esc(r.id)}">Add to shopping list</button>
+            <button class="btn primary" data-rx-log="${esc(r.id)}">I made this: log it</button>
+            ${r.mine ? `<button class="link" data-rx-del="${esc(r.id)}">Delete</button>` : ""}
+          </div>
+          <p class="hint rx-msg" role="status"></p>
+        </div>
+      </details>`;
+    }).join("") : `<p class="hint">${tone === "blunt" ? "Nothing that cheap or that easy. Loosen a filter or raise the budget." : "No recipes match. Try removing a filter or raising the budget."}</p>`;
+    renderShopList();
+  }
+  const findRecipe = id => [...myRecipes(), ...RECIPES].find(r => r.id === id);
+
+  // Shopping list: tick off in the shop.
+  const loadShop = () => { try { return JSON.parse(localStorage.getItem("na-shop") || "[]"); } catch { return []; } };
+  const saveShop = l => { try { localStorage.setItem("na-shop", JSON.stringify(l)); } catch {} };
+  function renderShopList() {
+    const l = loadShop(), el = $("shop-list");
+    el.hidden = !l.length;
+    if (!l.length) { el.innerHTML = ""; return; }
+    const left = l.filter(i => !i.done).length;
+    el.innerHTML = `<h4>Shopping list · ${left} to get</h4>
+      <ul>${l.map((i, k) => `<li><label class="${i.done ? "done" : ""}"><input type="checkbox" data-shop-i="${k}" ${i.done ? "checked" : ""}> ${esc(i.name)} <small>${esc(qtyText(i.qty))}</small></label></li>`).join("")}</ul>
+      <div class="row"><button class="link" data-shop-clear>Clear ticked</button><button class="link" data-shop-all>Clear all</button></div>`;
+  }
+  // Amounts are kept as {q, m}: the same amount from several recipes adds up ("½ can × 4").
+  function qtyText(list) {
+    const sum = new Map();
+    for (const x of list) { const q = typeof x === "string" ? x : x.q, m = typeof x === "string" ? 1 : x.m; sum.set(q, (sum.get(q) || 0) + m); }
+    return [...sum].map(([q, m]) => m > 1 ? `${q} × ${m}` : q).join(" + ");
+  }
+  function addToShop(r) {
+    const l = loadShop();
+    for (const [nm, qty] of r.ing) {
+      const q = { q: qty, m: RX.people };
+      const ex = l.find(i => i.name.toLowerCase() === nm.toLowerCase() && !i.done);
+      if (ex) ex.qty.push(q); else l.push({ name: nm, qty: [q], done: false });
+    }
+    saveShop(l); renderShopList();
+  }
+
+  $("rx-list").addEventListener("click", e => {
+    const t = e.target.closest("[data-rx-shop],[data-rx-log],[data-rx-del]"); if (!t) return;
+    const r = findRecipe(t.dataset.rxShop || t.dataset.rxLog || t.dataset.rxDel); if (!r) return;
+    const msg = t.closest(".rx-body").querySelector(".rx-msg");
+    if (t.dataset.rxShop) { addToShop(r); msg.textContent = `Added ${r.ing.length} items to your shopping list.`; }
+    if (t.dataset.rxLog) {
+      if (!LOG.ready) { msg.textContent = "Your log is still loading. Try again in a moment."; return; }
+      addEntry({ name: r.name, grams: r.weight, tier: r.tier, n: { ...r.n }, minutes: 0, src: "recipe" }, dayKey(Date.now()));
+      msg.textContent = tone === "blunt" ? "Logged. That's points in the green." : "Added to today's log.";
+    }
+    if (t.dataset.rxDel) { saveMyRecipes(myRecipes().filter(x => x.id !== r.id)); renderRecipes(); }
+  });
+  // Only one recipe open at a time keeps the list easy to scan.
+  $("rx-list").addEventListener("toggle", e => {
+    if (e.target.open) document.querySelectorAll("#rx-list details.rx[open]").forEach(d => { if (d !== e.target) d.open = false; });
+  }, true);
+  $("shop-list").addEventListener("change", e => {
+    const k = e.target.dataset.shopI; if (k == null) return;
+    const l = loadShop(); l[+k].done = e.target.checked; saveShop(l); renderShopList();
+  });
+  $("shop-list").addEventListener("click", e => {
+    if (e.target.closest("[data-shop-clear]")) { saveShop(loadShop().filter(i => !i.done)); renderShopList(); }
+    if (e.target.closest("[data-shop-all]")) { saveShop([]); renderShopList(); }
+  });
+  $("rx-budget").addEventListener("change", e => { const v = parseFloat(e.target.value); if (v > 0) RX.budget = v; saveRX(); renderRecipes(); });
+  $("rx-people").addEventListener("change", e => { const v = Math.round(+e.target.value); if (v >= 1 && v <= 12) RX.people = v; saveRX(); renderRecipes(); });
+  $("rx-shop").addEventListener("change", e => { RX.shop = e.target.value; saveRX(); renderRecipes(); });
+  $("rx-filters").addEventListener("click", e => {
+    const c = e.target.closest(".chip"); if (!c) return;
+    const f = c.dataset.f;
+    RX.filters = RX.filters.includes(f) ? RX.filters.filter(x => x !== f) : [...RX.filters, f];
+    saveRX(); renderRecipes();
+  });
+
+  // Claude makes a recipe to order (Claude version only).
+  $("rx-go").onclick = async () => {
+    const want = $("rx-want").value.trim(), st = $("rx-status");
+    if (!sample) return;
+    $("rx-go").disabled = true; st.className = "status"; st.textContent = "Writing a recipe…";
+    try {
+      const j = await sample.json(`Write one simple recipe for someone moving off a highly processed diet, who finds long instructions hard to follow.
+They want: <<${(want || "anything filling and cheap").slice(0, 300)}>>
+Budget: NZ$${RX.budget} for the whole meal, for ${RX.people} ${RX.people > 1 ? "people" : "person"}.
+
+Rules:
+- Whole foods only: vegetables, fruit, eggs, plain meat and fish, legumes, whole grains, plain dairy, nuts. Salt, pepper, oil, butter, herbs and spices are fine. No sauces, stock cubes, processed meat or anything with additives.
+- At most 6 ingredients and 4 short steps. One pan or no cooking if possible.
+- Estimate typical New Zealand supermarket prices per serve in NZD. Stay within budget.
+
+Reply with only JSON:
+{"name": "short name", "minutes": total minutes, "tags": ["nocook" or "onepan" if true], "tier": 1-3 processing step, "weight": grams per serve,
+ "ing": [["ingredient", "amount for one serve", price per serve in NZD, "short supermarket search term"]],
+ "steps": ["one short sentence per step"],
+ "n": {"energy_kj": n, "protein": n, "fat": n, "sat_fat": n, "carbs": n, "sugars": n, "fibre": n, "sodium": n}}  (nutrition per serve, sodium in mg)`, { modelTier: "quick", cache: false });
+      const ok = j && typeof j.name === "string" && Array.isArray(j.ing) && j.ing.length && Array.isArray(j.steps) && j.steps.length;
+      if (!ok) { st.className = "status err"; st.textContent = "That recipe came back incomplete. Try again."; return; }
+      const r = { id: "my-" + Date.now().toString(36), name: String(j.name), minutes: Math.round(+j.minutes || 20),
+        tags: (Array.isArray(j.tags) ? j.tags : []).filter(t => ["nocook", "onepan"].includes(t)), tier: Math.min(3, Math.max(1, Math.round(+j.tier || 3))),
+        weight: Math.round(+j.weight || 400), ing: j.ing.slice(0, 8).map(i => [String(i[0]), String(i[1] || ""), Math.max(0, +i[2] || 0), String(i[3] || i[0])]),
+        steps: j.steps.slice(0, 6).map(String), n: j.n && typeof j.n === "object" ? j.n : {} };
+      saveMyRecipes([r, ...myRecipes()]);
+      $("rx-want").value = ""; st.textContent = "Added at the top. Prices are Claude's estimates.";
+      renderRecipes();
+      const d = document.querySelector(`#rx-list details[data-rx="${r.id}"]`); if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "start" }); }
+    } catch (e) {
+      st.className = "status err";
+      st.textContent = e?.code === "rate_limited" ? "Too many requests. Wait a minute and try again." : "Couldn't make a recipe. Try again.";
+    } finally { $("rx-go").disabled = false; }
+  };
+
   // ---------- Food log ----------
   // Daily Intake reference values behind %DI on NZ/AU labels (FSANZ Standard 1.2.8, 8,700 kJ adult).
   const NUTS = [
@@ -1700,65 +1970,112 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
       trans: items.some(i => /hydrogenated/i.test(i.name) && !/fully hydrogenated/i.test(i.name)),
     };
   }
-  // Long-run links, worded as risk over years (WHO, IARC, BMJ 2024 umbrella review, Lancet 2019 fibre review).
-  const LONG = {
-    sugar: "Over years: type 2 diabetes, weight gain, fatty liver and tooth decay.",
-    salt: "Over years: high blood pressure, which leads to stroke, heart disease and kidney disease.",
-    satfat: "Over years: raised LDL cholesterol and heart disease.",
-    big: "Over years of overeating: weight gain, type 2 diabetes and heart disease.",
-    upf: "Eaten daily, linked to heart disease, type 2 diabetes, obesity, depression and anxiety, and dying younger.",
-    nitrite: "Processed meat is a known cause of bowel cancer. Every 50 g a day raises the risk by about 18%.",
-    trans: "Over years: heart disease. Trans fat is the most harmful fat for your heart.",
-    fibre: "Over years: lower risk of bowel cancer, heart disease and type 2 diabetes.",
-    whole: "Over years: diets built on whole foods are linked to longer, healthier lives.",
+  // Each effect: a one-line starter (blunt or calm), what's happening now, and the science behind it in a dropdown.
+  const SCI = {
+    sugar: {
+      detail: "Sugar reaches your blood in 15–30 minutes. Your pancreas releases insulin to clear it. Over years, a sugary diet is linked to type 2 diabetes, weight gain, fatty liver and tooth decay.",
+      facts: ["Sugar doesn't lift your mood. A review of 31 studies found people felt more tired and less alert within an hour of eating it.",
+        "Each daily serve of a sugary drink was linked to an 18% higher risk of type 2 diabetes.",
+        "WHO advises keeping free sugars under 10% of your energy, ideally under 5% (about 25 g, or 6 teaspoons, a day)."],
+      refs: [["Mantantzis et al., Neuroscience & Biobehavioral Reviews 2019", "https://doi.org/10.1016/j.neubiorev.2019.03.016"],
+        ["Imamura et al., BMJ 2015", "https://www.bmj.com/content/351/bmj.h3576"],
+        ["WHO, Guideline: sugars intake for adults and children, 2015", "https://www.who.int/publications/i/item/9789241549028"]] },
+    salt: {
+      detail: "Your kidneys hold on to water to dilute the extra sodium, which raises blood pressure for a few hours. Over years, high blood pressure leads to stroke, heart disease and kidney disease.",
+      facts: ["Eating about 4.4 g less salt a day lowered blood pressure by about 5/3 mmHg in people with high blood pressure.",
+        "WHO advises under 5 g of salt a day (2,000 mg sodium). Most people eat about double that."],
+      refs: [["He et al., BMJ 2013", "https://www.bmj.com/content/346/bmj.f1325"],
+        ["WHO, Sodium reduction fact sheet", "https://www.who.int/news-room/fact-sheets/detail/salt-reduction"]] },
+    fat: {
+      detail: "Fat slows how fast your stomach empties, so digestion takes hours. Saturated fat raises LDL cholesterol, which builds up in artery walls over years.",
+      facts: ["Cutting saturated fat (and replacing it with unsaturated fats) reduced heart attacks and strokes by about 17% across 15 trials."],
+      refs: [["Hooper et al., Cochrane Database of Systematic Reviews 2020", "https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD011737.pub3/full"]] },
+    big: {
+      detail: "A large meal diverts blood to your gut to digest it, which often brings drowsiness. Regularly eating more than you burn leads to weight gain.",
+      facts: ["Excess body weight is the biggest risk factor for type 2 diabetes, and raises the risk of heart disease and several cancers."],
+      refs: [["WHO, Obesity and overweight fact sheet", "https://www.who.int/news-room/fact-sheets/detail/obesity-and-overweight"]] },
+    upf: {
+      detail: "Ultra-processed food is soft, dense and quick to eat, so you eat more before fullness signals catch up. Eaten daily, it's linked to heart disease, type 2 diabetes, obesity, depression and anxiety.",
+      facts: ["On an ultra-processed diet, people ate about 500 more calories a day than on an unprocessed one, without noticing, and gained weight in two weeks.",
+        "Across nearly 10 million people, eating the most ultra-processed food was linked to about 50% higher risk of dying from heart disease, 48–53% higher risk of anxiety and common mental disorders, 12% higher risk of type 2 diabetes and 21% higher risk of dying from any cause."],
+      refs: [["Hall et al., Cell Metabolism 2019", "https://doi.org/10.1016/j.cmet.2019.05.008"],
+        ["Lane et al., BMJ 2024", "https://www.bmj.com/content/384/bmj-2023-077310"]] },
+    nitrite: {
+      detail: "Nitrites keep cured meat pink. In your gut they can form N-nitroso compounds that damage the cells lining your bowel.",
+      facts: ["The WHO's cancer agency classifies processed meat as a cause of cancer (Group 1, the same category as tobacco smoke, though not as risky).",
+        "Every 50 g of processed meat eaten daily raises the risk of bowel cancer by about 18%."],
+      refs: [["IARC (WHO), Monographs Vol. 114, press release 2015", "https://www.iarc.who.int/wp-content/uploads/2018/07/pr240_E.pdf"]] },
+    trans: {
+      detail: "Partly hydrogenated fat raises LDL (bad) cholesterol and lowers HDL (good) cholesterol at the same time.",
+      facts: ["Every 2% of daily energy from trans fat raised the risk of heart disease by about 23%.",
+        "WHO has called for trans fat to be removed from the food supply entirely."],
+      refs: [["Mozaffarian et al., New England Journal of Medicine 2006", "https://www.nejm.org/doi/full/10.1056/NEJMra054035"],
+        ["WHO, Trans fat fact sheet", "https://www.who.int/news-room/fact-sheets/detail/trans-fat"]] },
+    fibre: {
+      detail: "Fibre slows sugar into your blood and feeds the bacteria in your gut, which keeps energy steady and keeps you full longer.",
+      facts: ["People eating 25–29 g of fibre a day had 15–30% lower rates of death, heart disease, stroke, type 2 diabetes and bowel cancer than those eating the least."],
+      refs: [["Reynolds et al., The Lancet 2019", "https://doi.org/10.1016/S0140-6736(18)31809-9"]] },
+    protein: {
+      detail: "Protein is the most filling nutrient, and your muscles use it to repair.",
+      facts: ["Higher-protein meals increase fullness and help people keep weight off."],
+      refs: [["Leidy et al., American Journal of Clinical Nutrition 2015", "https://doi.org/10.3945/ajcn.114.084038"]] },
+    whole: {
+      detail: "Whole food needs no extra work from your body: it gets digested and used.",
+      facts: ["Poor diet (too little whole grain, fruit, nuts and vegetables, too much salt) was linked to 11 million deaths worldwide in one year, more than any other risk factor."],
+      refs: [["GBD 2017 Diet Collaborators, The Lancet 2019", "https://doi.org/10.1016/S0140-6736(19)30041-8"]] },
   };
+
   function bodyEffects(n, tier, flags) {
     n = n || {}; flags = flags || {};
     const out = [];
-    if (flags.nitrite) out.push({ key: "nitrite", bad: true, until: 240,
-      title: "Cured meat",
-      text: "Nitrites keep the meat pink. In your gut they can form N-nitroso compounds that damage the bowel lining.",
-      now: () => "Nitrites from the cured meat are moving through your gut." });
-    if (flags.trans) out.push({ key: "trans", bad: true, until: 240,
-      title: "Trans fat",
-      text: "Partly hydrogenated fat raises your bad cholesterol and lowers your good cholesterol.",
-      now: () => "Trans fat is being absorbed and packed into your cholesterol." });
     const sug = n.sugars || 0, fib = n.fibre || 0;
-    if (sug >= 12 && fib < 5) out.push({ key: "sugar", bad: true, until: 150,
-      title: "Sugar rush, then a dip",
-      text: "Sugar reaches your blood in 15–30 minutes. Your pancreas pumps out insulin to clear it, and the drop 1–2 hours later often leaves you tired, foggy or hungry again.",
-      now: m => m < 30 ? "Blood sugar is climbing. Insulin is on its way." : "Insulin is pulling your blood sugar back down. An energy dip is likely around now." });
-    if ((n.sodium || 0) >= 500) out.push({ key: "salt", bad: true, until: 360,
-      title: "Holding water",
-      text: "Your kidneys hold on to water to dilute the salt. You may feel thirsty or puffy, and your blood pressure rises for a few hours.",
+    if (flags.nitrite) out.push({ key: "nitrite", bad: true, until: 240, title: "Cured meat",
+      blunt: "Cured meat causes bowel cancer. That's proven.", calm: "Processed meat is linked to bowel cancer.",
+      now: () => "Nitrites from the cured meat are moving through your gut." });
+    if (flags.trans) out.push({ key: "trans", bad: true, until: 240, title: "Trans fat",
+      blunt: "The worst fat there is for your heart.", calm: "Trans fat raises bad cholesterol and lowers good cholesterol.",
+      now: () => "Trans fat is being absorbed into your cholesterol." });
+    if (sug >= 12 && fib < 5) out.push({ key: "sugar", bad: true, until: 150, title: "Sugar rush, then a crash",
+      blunt: "Spike now. Crash in an hour. Diabetes if it's a habit.", calm: "A quick rise in blood sugar, often followed by a dip in energy.",
+      now: m => m < 30 ? "Blood sugar is climbing. Insulin is on its way." : "Insulin is pulling your blood sugar down. Expect a crash around now." });
+    if ((n.sodium || 0) >= 500) out.push({ key: "salt", bad: true, until: 360, title: "Holding water",
+      blunt: "Your body hoards water to cope. Years of this: high blood pressure, stroke.", calm: "Salt makes your body hold water and raises blood pressure.",
       now: () => "Your kidneys are holding water to dilute the salt. Drink water." });
-    if ((n.sat_fat || 0) >= 10 || (n.fat || 0) >= 30) out.push({ key: "fat", bad: true, until: 240,
-      title: "Slow, heavy digestion",
-      text: "Fat slows your stomach right down. Digestion takes hours, so you may feel heavy or sluggish.",
-      now: () => "Your stomach is still working through the fat. Feeling heavy is normal." });
-    if ((n.energy_kj || 0) >= 3000) out.push({ key: "big", bad: true, until: 120,
-      title: "Food coma",
-      text: "A big meal pulls blood to your gut to digest it. Drowsiness afterwards is common.",
-      now: () => "Blood is diverted to your gut to digest a big meal. Drowsiness is likely." });
-    if (tier === 5) out.push({ key: "upf", bad: true, until: 60,
-      title: "Fullness arrives late",
-      text: "Ultra-processed food is soft and quick to eat, so your fullness signals lag behind. In one trial people ate about 500 extra calories a day without noticing.",
-      now: () => "Your fullness signals haven't caught up yet. Wait 20 minutes before eating more." });
-    if (fib >= 4) out.push({ key: "fibre", bad: false, until: 240,
-      title: "Steady energy",
-      text: "Fibre slows sugar into your blood and feeds your gut bacteria. Expect steadier energy and to stay full longer.",
+    if ((n.sat_fat || 0) >= 10 || (n.fat || 0) >= 30) out.push({ key: "fat", bad: true, until: 240, title: "Sitting heavy",
+      blunt: (n.sat_fat || 0) >= 10 ? "Sits heavy for hours. Years of this: heart disease." : "Sits heavy for hours.", calm: "Fat slows digestion. Saturated fat raises cholesterol.",
+      now: () => "Your stomach is still working through the fat." });
+    if ((n.energy_kj || 0) >= 3000) out.push({ key: "big", bad: true, until: 120, title: "Food coma",
+      blunt: "Too much at once. You'll want a nap.", calm: "A big meal often brings drowsiness.",
+      now: () => "Blood is diverted to your gut. Drowsiness is likely." });
+    if (tier === 5) out.push({ key: "upf", bad: true, until: 60, title: "Built to overeat",
+      blunt: "Made so you can't stop. Daily, it's linked to dying younger.", calm: "Easy to overeat. Daily, it's linked to heart disease and diabetes.",
+      now: () => "Your fullness signals haven't caught up. Wait 20 minutes before eating more." });
+    if (fib >= 4) out.push({ key: "fibre", bad: false, until: 240, title: "Steady energy",
+      blunt: "Steady energy. Protects your bowel and heart.", calm: "Fibre keeps energy steady and protects your bowel and heart.",
       now: () => "Fibre is releasing energy slowly and feeding your gut bacteria." });
-    if ((n.protein || 0) >= 15) out.push({ key: "protein", bad: false, until: 240,
-      title: "Staying full",
-      text: "Protein keeps you full and gives your muscles what they need to repair.",
+    if ((n.protein || 0) >= 15) out.push({ key: "protein", bad: false, until: 240, title: "Staying full",
+      blunt: "Keeps you full. Fixes muscle.", calm: "Protein keeps you full and repairs muscle.",
       now: () => "Protein is keeping you full and repairing muscle." });
-    if ((tier === 1 || tier === 2) && !out.some(e => e.bad)) out.push({ key: "whole", bad: false, until: 180,
-      title: "No clean-up needed",
-      text: "Real food. Your body knows exactly what to do with it: digest, absorb, done.",
+    if ((tier === 1 || tier === 2) && !out.some(e => e.bad)) out.push({ key: "whole", bad: false, until: 180, title: "Nothing to clean up",
+      blunt: "Real food. Nothing for your body to deal with.", calm: "Whole food your body digests and uses with no extra work.",
       now: () => "Real food. Your body is just using it." });
-    for (const e of out) e.long = e.key === "fat" ? ((n.sat_fat || 0) >= 10 ? LONG.satfat : null) : (LONG[e.key] || null);
+    for (const e of out) e.sci = SCI[e.key];
     return out;
   }
+  // One effect as a list item: starter line up front, the science folded away.
+  function sciHTML(sci) {
+    if (!sci) return "";
+    return `<details class="sci"><summary>See the science</summary>
+      <p>${esc(sci.detail)}</p>
+      <ul>${sci.facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul>
+      <ol class="refs">${sci.refs.map(([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join("")}</ol>
+      <p class="hint">Population studies show risk across many people over years. They aren't a diagnosis for you.</p>
+    </details>`;
+  }
+  function fxItem(e, extra) {
+    return `<li class="${e.bad ? "bad" : "good"}"><b>${esc(e.title)}</b><span>${esc(e[tone] || e.blunt)}</span>${extra || ""}${sciHTML(e.sci)}</li>`;
+  }
+
   // One line for a scan result: the most important thing this food will make your body do.
   function bodyLine(r) {
     const g = r.nip?.serving_g || 100;
@@ -1806,7 +2123,6 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
     return { moves, stops, need, hopeless: need > 40 };
   }
 
-  const LONG_NOTE = `<p class="hint" style="margin:8px 0 0">"Over years" links come from large population studies (WHO, IARC, BMJ, Lancet). They describe risk across many people eating this way regularly, not a diagnosis.</p>`;
   function renderDashboard(entries, t, isToday, blunt) {
     if (!entries.length) return "";
     const { score, parts, hasN } = dayScore(entries, t);
@@ -1831,9 +2147,9 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
     const dayFx = new Map();
     for (const e of entries) for (const fx of bodyEffects(e.n, e.tier, e.flags)) if (!dayFx.has(fx.key)) dayFx.set(fx.key, { fx, e });
     const body = liveUniq.length
-      ? `<div class="body"><h4>What your body is doing now</h4><ul class="fx">${liveUniq.map(({ fx, e, m }) => `<li class="${fx.bad ? "bad" : "good"}"><b>${esc(fx.title)}</b><span>${esc(fx.now(m))}</span>${fx.long ? `<em class="long">${esc(fx.long)}</em>` : ""}<small>${esc(e.name)} · ${ago(m)}</small></li>`).join("")}</ul>${LONG_NOTE}</div>`
+      ? `<div class="body"><h4>What your body is doing now</h4><ul class="fx">${liveUniq.map(({ fx, e, m }) => fxItem(fx, `<span class="now">${esc(fx.now(m))}</span><small>${esc(e.name)} · ${ago(m)}</small>`)).join("")}</ul></div>`
       : dayFx.size
-        ? `<div class="body"><h4>${isToday ? "What your body dealt with today" : "What your body dealt with"}</h4><ul class="fx">${[...dayFx.values()].sort((a, b) => b.fx.bad - a.fx.bad).slice(0, 3).map(({ fx, e }) => `<li class="${fx.bad ? "bad" : "good"}"><b>${esc(fx.title)}</b><span>${esc(fx.text)}</span>${fx.long ? `<em class="long">${esc(fx.long)}</em>` : ""}<small>from ${esc(e.name)}</small></li>`).join("")}</ul>${LONG_NOTE}</div>`
+        ? `<div class="body"><h4>${isToday ? "What your body dealt with today" : "What your body dealt with"}</h4><ul class="fx">${[...dayFx.values()].sort((a, b) => b.fx.bad - a.fx.bad).slice(0, 3).map(({ fx, e }) => fxItem(fx, `<small>from ${esc(e.name)}</small>`)).join("")}</ul></div>`
         : "";
     return `
       <div class="dash ${pos ? "up" : "down"}">
@@ -1949,16 +2265,18 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
   $("targets-reset").onclick = () => { LOG.targets = { ...DEFAULT_TARGETS }; persistTargets(); renderTargets(); renderLog(); };
 
   function showView(v) {
-    $("nav-scan").setAttribute("aria-selected", v === "scan");
-    $("nav-log").setAttribute("aria-selected", v === "log");
+    for (const k of ["scan", "log", "recipes"]) {
+      $("nav-" + k).setAttribute("aria-selected", v === k);
+      $("view-" + k).hidden = v !== k;
+    }
     try { localStorage.setItem("na-view", v); } catch {}
-    $("view-scan").hidden = v !== "scan";
-    $("view-log").hidden = v !== "log";
     if (v === "log") { viewDay = dayKey(Date.now()); renderLog(); }
+    if (v === "recipes") renderRecipes();
     window.scrollTo({ top: 0 });
   }
   $("nav-scan").onclick = () => showView("scan");
   $("nav-log").onclick = () => showView("log");
+  $("nav-recipes").onclick = () => showView("recipes");
 
   // ---------- Boot ----------
   $("tone-blunt").onclick = () => setTone("blunt");
@@ -1970,12 +2288,13 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
   renderHist();
   renderTargets();
   initLog();
-  try { if (localStorage.getItem("na-view") === "log") showView("log"); } catch {}
+  try { const v = localStorage.getItem("na-view"); if (v === "log" || v === "recipes") showView(v); } catch {}
   setReaderNote();
   (window.claude?.use ? window.claude.use("sample") : Promise.resolve(null)).then(async s => {
     if (!s) { enableManualAdd(); setReaderNote(); return; }
     const lim = await s.limits().catch(() => null);
     sample = s;
+    $("rx-make").hidden = false;
     canImages = !!lim?.images;
     if (canImages) maxImages = Math.min(3, lim.images.maxCount || 3);
     setReaderNote();
