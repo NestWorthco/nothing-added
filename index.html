@@ -207,6 +207,19 @@ details.more > summary { cursor: pointer; font-family: var(--display); font-weig
 .namebox { display: grid; gap: 6px; }
 .namebox input { flex: 1 1 200px; min-width: 0; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 8px; padding: 9px 10px; font: 16px var(--body); }
 .hist .more-link { justify-self: start; }
+.lookup { display: flex; gap: 8px; }
+.lookup .btn { white-space: nowrap; }
+.lookup input { flex: 1 1 auto; min-width: 0; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 10px; padding: 11px 12px; font: 16px var(--body); }
+#lookup-results { display: grid; gap: 8px; }
+#lookup-results:empty { display: none; }
+.lk-head { margin: 0; }
+.lk-list { display: grid; gap: 6px; max-height: 420px; overflow-y: auto; }
+.lk { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; color: var(--ink); font: 15px var(--body); cursor: pointer; }
+.lk:hover { border-color: var(--ink); }
+.lk:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lk-badge { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--tier); color: var(--surface); font-family: var(--display); font-weight: 900; font-stretch: 75%; font-size: 16px; }
+.lk-nm { min-width: 0; overflow: hidden; }
+.lk-nm small { display: block; color: var(--muted); font-size: 12.5px; }
 .tone { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
 .tone .tabs { margin: 0; }
 .tone .tabs button { padding: 4px 10px; font-size: 13px; }
@@ -277,6 +290,11 @@ details p { color: var(--muted); font-size: 14px; }
     <div id="pane-photo" class="pane" style="display:grid;gap:12px">
       <label class="btn primary bigscan hero" for="cam"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M15.5 8v8M17.5 8v8"/></svg>Scan a product<input id="cam" type="file" accept="image/*" capture="environment"></label>
       <p class="hint">Photograph the barcode or the ingredients list. One photo is enough.</p>
+      <form id="lookup" class="lookup" role="search">
+        <input id="q" type="search" placeholder="Or look up a food, e.g. peanut butter" enterkeyhint="search" autocomplete="off" aria-label="Look up a food">
+        <button class="btn" type="submit">Look up</button>
+      </form>
+      <div id="lookup-results" aria-live="polite"></div>
       <div id="barcode-box" class="barcode" hidden></div>
       <div id="thumbs" class="thumbs"></div>
       <div class="row" id="read-row" hidden>
@@ -1372,6 +1390,118 @@ ${PROMPT_RULES}`;
         ? "Text is read on your phone, then checked by Claude."
         : "Text is read on your phone. Check the result against the pack.";
   }
+
+  // ---------- Look up a food by name ----------
+  // Your own scanned products first, then Open Food Facts (NZ, then AU, then everywhere) when the app runs on its own site.
+  // Inside Claude, Open Food Facts is out of reach, so Claude can describe a typical version instead.
+  const OFF_NOTE = "From Open Food Facts, a database built by volunteers. Recipes change, so check it against the pack.";
+  function offToResult(p) {
+    const name = [String(p.brands || "").split(",")[0].trim(), p.product_name_en || p.product_name].filter(Boolean).join(" ") || null;
+    const ing = (p.ingredients_text_en || p.ingredients_text || "").trim();
+    if (!ing) return { name, r: null };
+    const n = p.nutriments || {};
+    const g = k => { const v = n[k]; return v === "" || v == null || isNaN(+v) ? null : +v; };
+    const nip = {
+      energy_kj: g("energy-kj_100g") ?? g("energy_100g"), protein: g("proteins_100g"), fat: g("fat_100g"), sat_fat: g("saturated-fat_100g"),
+      carbs: g("carbohydrates_100g"), sugars: g("sugars_100g"), fibre: g("fiber_100g"),
+      sodium: g("sodium_100g") != null ? Math.round(g("sodium_100g") * 1000) : null,
+      serving_g: +p.serving_quantity > 0 ? +p.serving_quantity : null, servings: null,
+    };
+    return { name, r: analyse({ product: name, ingredientsText: ing, leaves: parseIngredients(ing), nip, notes: [OFF_NOTE] }) };
+  }
+
+  const OFF_FIELDS = "code,product_name,product_name_en,brands,ingredients_text_en,ingredients_text,nutriments,serving_quantity";
+  async function searchOFF(q, signal) {
+    const seen = new Set(), out = [];
+    for (const host of ["nz", "au", "world"]) {
+      try {
+        const res = await fetch(`https://${host}.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=30&fields=${OFF_FIELDS}`, { signal });
+        if (!res.ok) continue;
+        const j = await res.json();
+        for (const p of j.products || []) {
+          if (!p.code || seen.has(p.code)) continue;
+          const { r } = offToResult(p);
+          if (!r || !r.tier) continue;
+          seen.add(p.code); r.barcode = p.code; out.push(r);
+        }
+      } catch (e) { if (e?.name === "AbortError") throw e; }
+      if (out.length >= 8) break;
+    }
+    return out;
+  }
+
+  function searchLibrary(q) {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const hit = r => r && r.product && r.tier && words.every(w => r.product.toLowerCase().includes(w));
+    const byKey = new Map();
+    for (const r of [...Object.values(localProducts()), ...loadHist()]) if (hit(r)) byKey.set(r.barcode || r.product, r);
+    return [...byKey.values()];
+  }
+
+  let lookupCtl = null, lookupList = [];
+  const byLeastProcessed = (a, b) => a.tier - b.tier || b.score - a.score;
+  function renderLookup(q, mine, found, busy) {
+    lookupList = [...mine.map(r => ({ r, mine: true })), ...found.map(r => ({ r, mine: false }))].sort((a, b) => byLeastProcessed(a.r, b.r));
+    const row = ({ r, mine }, i) => `<button class="lk" data-lk="${i}" style="--tier:${tierColor(r.tier)}">
+        <span class="lk-badge">${r.tier}</span>
+        <span class="lk-nm">${esc(r.product || "Unnamed product")}<small>${TIERS[r.tier].name}${mine ? " · scanned by you" : ""}</small></span>
+        <span class="t">›</span></button>`;
+    const el = $("lookup-results");
+    if (!lookupList.length) {
+      el.innerHTML = busy ? `<p class="hint">Searching…</p>` : `<p class="hint">${tone === "blunt" ? `Nothing found for “${esc(q)}”. Scan the pack instead.` : `No results for “${esc(q)}”. Try a shorter name, or scan the pack.`}</p>${askButton(q)}`;
+      return;
+    }
+    el.innerHTML = `${found.length ? `<p class="hint lk-head">${found.length} on Open Food Facts · least processed first</p>` : ""}
+      <div class="lk-list">${lookupList.map(row).join("")}</div>
+      ${busy ? `<p class="hint">Searching Open Food Facts…</p>` : ""}${!found.length && !busy ? askButton(q) : ""}`;
+  }
+  const askButton = q => (!STANDALONE && sample) ? `<button class="btn" data-ask="${esc(q)}">Ask Claude what's usually in it</button>` : "";
+
+  async function lookup(q) {
+    q = q.trim();
+    if (q.length < 2) { $("lookup-results").innerHTML = ""; return; }
+    lookupCtl?.abort(); lookupCtl = new AbortController();
+    const signal = lookupCtl.signal;
+    const mine = searchLibrary(q).sort(byLeastProcessed);
+    const canOFF = STANDALONE && navigator.onLine;
+    renderLookup(q, mine, [], canOFF);
+    if (!canOFF) return;
+    try {
+      const mineCodes = new Set(mine.map(r => r.barcode).filter(Boolean));
+      const found = (await searchOFF(q, signal)).filter(r => !mineCodes.has(r.barcode)).sort(byLeastProcessed);
+      if (!signal.aborted) renderLookup(q, mine, found, false);
+    } catch (e) {
+      if (e?.name !== "AbortError") $("lookup-results").insertAdjacentHTML("beforeend", `<p class="status err">Couldn't reach Open Food Facts. Check your connection and search again.</p>`);
+    }
+  }
+
+  async function askClaude(q) {
+    const el = $("lookup-results");
+    el.innerHTML = `<p class="hint">Asking Claude about a typical “${esc(q)}”…</p>`;
+    try {
+      const j = await sample.json(`Describe the ingredients list and nutrition panel of a typical supermarket version of "${q.slice(0, 120)}" sold in New Zealand. Use the most common mainstream recipe, as printed on such a label.\n\n${PROMPT_RULES}`, { modelTier: "quick" });
+      const out = resultFromClaude(j);
+      if (out?.notFood) { el.innerHTML = ""; renderNotFood(out.notFood); return; }
+      if (!out) { el.innerHTML = `<p class="hint">Claude couldn't describe that one. Scan the pack instead.</p>`; return; }
+      out.r.product = out.r.product || cap(q);
+      out.r.checks.push({ calm: "Typical recipe described by Claude, not a specific product. Brands differ, so check the pack.", blunt: "This is a typical recipe from Claude, not the one in your hand. Check the pack." });
+      el.innerHTML = "";
+      render(out.r); $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      el.innerHTML = `<p class="status err">${e?.code === "rate_limited" ? "Too many requests. Wait a minute and try again." : "Couldn't ask Claude. Try again, or scan the pack."}</p>`;
+    }
+  }
+
+  $("lookup").addEventListener("submit", e => { e.preventDefault(); $("q").blur(); lookup($("q").value); });
+  $("lookup-results").addEventListener("click", e => {
+    const ask = e.target.closest("[data-ask]");
+    if (ask) { askClaude(ask.dataset.ask); return; }
+    const b = e.target.closest("[data-lk]"); if (!b) return;
+    const item = lookupList[+b.dataset.lk]; if (!item) return;
+    const r = { ...item.r, at: Date.now() };
+    if (item.mine) { render(r); pushHist(r); $("result").scrollIntoView({ behavior: "smooth", block: "start" }); }
+    else finishResult(r, r.barcode);
+  });
 
   // ---------- Food log ----------
   // Daily Intake reference values behind %DI on NZ/AU labels (FSANZ Standard 1.2.8, 8,700 kJ adult).
