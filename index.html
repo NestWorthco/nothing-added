@@ -316,9 +316,19 @@ details.rx > summary::-webkit-details-marker { display: none; }
 
 /* History + guide */
 .hist { display: grid; gap: 6px; }
-.hist button { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; color: var(--ink); font: 14px var(--body); cursor: pointer; }
-.hist button:hover { border-color: var(--ink); }
-.hist .s { font-family: var(--display); font-weight: 900; font-stretch: 70%; font-size: 24px; color: var(--tier); font-variant-numeric: tabular-nums; }
+.sect-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.sect-head .link { font-size: 13px; }
+.hrow { display: grid; grid-template-columns: 1fr 44px 44px; gap: 4px; align-items: stretch; }
+.hicon { display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--muted); cursor: pointer; padding: 0; }
+.hicon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hicon.on { color: var(--accent); border-color: var(--accent); }
+.hicon.on svg { fill: currentColor; }
+.hicon:hover { border-color: var(--ink); color: var(--ink); }
+.hicon:focus-visible, .hopen:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.on-pantry { border-color: var(--accent); color: var(--accent); }
+.hist .hopen { display: grid; grid-template-columns: 34px 1fr; gap: 10px; min-width: 0; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; color: var(--ink); font: 14px var(--body); cursor: pointer; }
+.hist .hopen:hover { border-color: var(--ink); }
+.hist .s { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--tier); color: var(--surface); font-family: var(--display); font-weight: 900; font-stretch: 75%; font-size: 16px; }
 .hist .t { font-size: 12px; color: var(--muted); }
 .hist .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
@@ -402,8 +412,13 @@ details p { color: var(--muted); font-size: 14px; }
   </section>
 
   <section id="history-wrap" hidden style="display:grid;gap:10px">
-    <span class="eyebrow">Recent</span>
+    <div class="sect-head"><span class="eyebrow">Recent</span><button class="link" id="hist-clear">Clear all</button></div>
     <div id="history" class="hist"></div>
+  </section>
+
+  <section id="pantry-wrap" hidden style="display:grid;gap:10px">
+    <div class="sect-head"><span class="eyebrow" id="pantry-title">Pantry</span><button class="link" id="pantry-clear">Clear all</button></div>
+    <div id="pantry" class="hist"></div>
   </section>
 
   <section id="result" aria-live="polite"></section>
@@ -950,7 +965,10 @@ details p { color: var(--muted); font-size: 14px; }
         <div class="next">
           <p class="next-line">${esc(NEXT[blunt ? "blunt" : "calm"][r.tier])}</p>
           ${logControls(r)}
-          <button class="btn" data-scan-again>Scan another</button>
+          <div class="row">
+            <button class="btn${inPantry(r) ? " on-pantry" : ""}" data-save-pantry aria-pressed="${inPantry(r)}">${inPantry(r) ? "In your pantry ✓" : "Save to pantry"}</button>
+            <button class="btn" data-scan-again>Scan another</button>
+          </div>
         </div>
         <details class="more">
           <summary>See details</summary>
@@ -980,6 +998,7 @@ details p { color: var(--muted); font-size: 14px; }
       return;
     }
     if (e.target.closest("[data-scan-again]")) { resetScan(); return; }
+    if (e.target.closest("[data-save-pantry]") && current) { togglePantry(current); return; }
     if (e.target.id === "name-save") nameCurrent();
   });
   $("result").addEventListener("keydown", e => { if (e.target.id === "name-it" && e.key === "Enter") nameCurrent(); });
@@ -1024,18 +1043,71 @@ details p { color: var(--muted); font-size: 14px; }
     h.unshift(r); saveHist(h); renderHist();
   }
   let histAll = false;
+  const SAVE_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>`;
+  const X_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+  const itemKey = r => r.barcode || (r.product ? "n:" + r.product.toLowerCase() : "t:" + r.at);
+  function histRow(r, i, list) {
+    const saved = inPantry(r);
+    return `<div class="hrow" style="--tier:${tierColor(r.tier)}">
+      <button class="hopen" data-open="${list}" data-i="${i}"><span class="s">${r.tier}</span><span class="nm">${esc(r.product || "Scanned product")}<br><span class="t">${TIERS[r.tier].name}${r.tier === 5 && tone === "blunt" ? " · −" + MIN_PER_SERVING + " min a serve" : ""}</span></span></button>
+      <button class="hicon${saved ? " on" : ""}" data-pantry="${list}" data-i="${i}" aria-pressed="${saved}" aria-label="${saved ? "Remove from pantry" : "Save to pantry"}" title="${saved ? "In your pantry" : "Save to pantry"}">${SAVE_ICON}</button>
+      <button class="hicon" data-remove="${list}" data-i="${i}" aria-label="Remove ${esc(r.product || "this product")}" title="Remove">${X_ICON}</button>
+    </div>`;
+  }
   function renderHist() {
     const h = loadHist();
     $("history-wrap").hidden = !h.length;
     const shown = histAll ? h : h.slice(0, 3);
-    $("history").innerHTML = shown.map((r, i) => `<button data-i="${i}" style="--tier:${tierColor(r.tier)}"><span class="s">${r.score}</span><span class="nm">${esc(r.product || "Scanned product")}<br><span class="t">${TIERS[r.tier].name}${r.tier === 5 && tone === "blunt" ? " · −" + MIN_PER_SERVING + " min a serve" : ""}</span></span><span class="t">›</span></button>`).join("")
+    $("history").innerHTML = shown.map((r, i) => histRow(r, i, "hist")).join("")
       + (h.length > 3 ? `<button class="link more-link" data-hist-toggle>${histAll ? "Show fewer" : `Show all ${h.length}`}</button>` : "");
+    renderPantry();
   }
-  $("history").addEventListener("click", e => {
+
+  // ---------- Pantry: products you keep at home ----------
+  const loadPantry = () => { try { return JSON.parse(localStorage.getItem("na-pantry") || "[]"); } catch { return []; } };
+  const savePantry = l => { try { localStorage.setItem("na-pantry", JSON.stringify(l.slice(0, 100))); } catch {} };
+  const inPantry = r => !!r && loadPantry().some(x => itemKey(x) === itemKey(r));
+  function togglePantry(r) {
+    const l = loadPantry(), k = itemKey(r);
+    const next = l.some(x => itemKey(x) === k) ? l.filter(x => itemKey(x) !== k) : [{ ...r, example: false }, ...l];
+    savePantry(next);
+    renderHist();
+    if (current && itemKey(current) === k) render(current);
+    return next.length > l.length;
+  }
+  const pantrySorted = () => loadPantry().sort((a, b) => a.tier - b.tier || b.score - a.score);
+  function renderPantry() {
+    const l = pantrySorted();
+    $("pantry-wrap").hidden = !l.length;
+    const bad = l.filter(r => r.tier >= 4).length;
+    $("pantry-title").textContent = `Pantry · ${l.length} item${l.length === 1 ? "" : "s"}${bad ? ` · ${bad} processed` : ""}`;
+    $("pantry").innerHTML = l.map((r, i) => histRow(r, i, "pantry")).join("");
+  }
+  const listFor = name => name === "pantry" ? pantrySorted() : loadHist();
+
+  function onListClick(e) {
     if (e.target.closest("[data-hist-toggle]")) { histAll = !histAll; renderHist(); return; }
-    const b = e.target.closest("button[data-i]"); if (!b) return;
-    const r = loadHist()[+b.dataset.i]; if (r) { render(r); $("result").scrollIntoView({ behavior: "smooth", block: "start" }); }
-  });
+    const b = e.target.closest("[data-open],[data-pantry],[data-remove]"); if (!b) return;
+    const name = b.dataset.open || b.dataset.pantry || b.dataset.remove;
+    const r = listFor(name)[+b.dataset.i]; if (!r) return;
+    if (b.dataset.open) { render(r); $("result").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    if (b.dataset.pantry) { togglePantry(r); return; }
+    if (b.dataset.remove) {
+      if (name === "pantry") savePantry(loadPantry().filter(x => itemKey(x) !== itemKey(r)));
+      else saveHist(loadHist().filter(x => x !== null && !(x.at === r.at && itemKey(x) === itemKey(r))));
+      renderHist();
+    }
+  }
+  $("history").addEventListener("click", onListClick);
+  $("pantry").addEventListener("click", onListClick);
+  // Clearing everything asks once, inline, so a stray tap can't wipe the list.
+  function confirmClear(btn, label, clear) {
+    if (btn.dataset.armed) { clear(); delete btn.dataset.armed; btn.textContent = "Clear all"; renderHist(); return; }
+    btn.dataset.armed = "1"; btn.textContent = `Tap again to clear ${label}`;
+    setTimeout(() => { if (btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = "Clear all"; } }, 4000);
+  }
+  $("hist-clear").onclick = e => confirmClear(e.currentTarget, "recent", () => { saveHist([]); histAll = false; });
+  $("pantry-clear").onclick = e => confirmClear(e.currentTarget, "pantry", () => savePantry([]));
 
   // ---------- Examples ----------
   const EXAMPLES = [
