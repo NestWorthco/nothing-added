@@ -239,6 +239,8 @@ details.more > summary { cursor: pointer; font-family: var(--display); font-weig
 .fx li small { color: var(--muted); font-size: 12.5px; }
 .bodyline { margin: 0; padding: 10px 12px; border-left: 4px solid var(--t1); background: var(--paper); border-radius: 0 8px 8px 0; font-size: 15px; }
 .bodyline.bad { border-left-color: var(--t5); }
+em.long { display: block; font-style: normal; font-weight: 600; font-size: 14px; color: var(--ink); margin-top: 4px; }
+.bad em.long, li.bad em.long { color: var(--t5); }
 .tone { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
 .tone .tabs { margin: 0; }
 .tone .tabs button { padding: 4px 10px; font-size: 13px; }
@@ -876,7 +878,7 @@ details p { color: var(--muted); font-size: 14px; }
         ${blunt ? `<p class="punch">${esc(BLUNT[r.tier].punch)}</p>` : ""}
         ${blunt && r.tier === 5 ? `<p class="lifechip">≈ −${MIN_PER_SERVING} min of life a serve <span class="hint">· rough estimate, see details</span></p>` : ""}
         ${facts.length ? `<ul class="facts">${facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
-        ${(() => { const b = bodyLine(r); return b ? `<p class="bodyline ${b.bad ? "bad" : "good"}"><b>Your body${b.per === "a serve" ? ", per serve" : ""}:</b> ${esc(b.title)}. ${esc(b.text)}</p>` : ""; })()}
+        ${(() => { const b = bodyLine(r); return b ? `<p class="bodyline ${b.bad ? "bad" : "good"}"><b>Your body${b.per === "a serve" ? ", per serve" : ""}:</b> ${esc(b.title)}. ${esc(b.text)}${b.long ? `<em class="long">${esc(b.long)}</em>` : ""}</p>` : ""; })()}
         ${source ? `<p class="hint" style="margin:0">${esc(source)}</p>` : ""}
         <div class="next">
           <p class="next-line">${esc(NEXT[blunt ? "blunt" : "calm"][r.tier])}</p>
@@ -889,6 +891,7 @@ details p { color: var(--muted); font-size: 14px; }
             <div class="ladder" aria-label="Processing scale, step ${r.tier} of 5">${ladder}</div>
             ${blunt ? `<p>${esc(BLUNT[r.tier].line)}</p>` : `<p>${esc(T.blurb)}</p>`}
             ${blunt ? lifeHTML(r) : ""}
+            ${(() => { const fx = bodyEffects(portion(r.nip, r.nip?.serving_g || 100), r.tier, riskFlags(r)); return fx.length ? `<div class="sect"><h4>What it does to your body</h4><ul class="fx">${fx.map(e => `<li class="${e.bad ? "bad" : "good"}"><b>${esc(e.title)}</b><span>${esc(e.text)}</span>${e.long ? `<em class="long">${esc(e.long)}</em>` : ""}</li>`).join("")}</ul>${LONG_NOTE}</div>` : ""; })()}
             ${rest.length ? `<div class="sect"><h4>More from the label</h4><ul class="checks">${rest.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>` : ""}
             ${EVIDENCE[r.tier] ? `<div class="evidence"><h4 style="margin:0;font-family:var(--display);text-transform:uppercase;font-stretch:80%">${EVIDENCE[r.tier].head}</h4><ul>${EVIDENCE[r.tier].items.map(x => `<li>${esc(x)}</li>`).join("")}</ul><span class="src">${esc(EVIDENCE[r.tier].src)}</span></div>` : ""}
             <div class="sect"><h4>Ingredients · ${r.items.length}</h4>
@@ -1614,7 +1617,7 @@ ${PROMPT_RULES}`;
     if (!(g > 0)) { msg.textContent = "Enter how many grams you ate."; return; }
     if (!LOG.ready) { msg.textContent = "Your log is still loading. Try again in a moment."; return; }
     const r = current, mins = entryMinutes(r.tier, g, r.nip?.serving_g);
-    addEntry({ name: r.product || "Scanned product", grams: g, tier: r.tier, n: portion(r.nip, g), minutes: mins, src: "label" }, dayKey(Date.now()));
+    addEntry({ name: r.product || "Scanned product", grams: g, tier: r.tier, n: portion(r.nip, g), minutes: mins, src: "label", flags: riskFlags(r) }, dayKey(Date.now()));
     msg.textContent = mins && tone === "blunt" ? `Logged. That cost you about ${mins} minutes.` : "Added to today's log.";
   });
 
@@ -1689,15 +1692,43 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
 
   // ---------- What your body does with it ----------
   // Rules use the eaten portion's nutrition. Windows are minutes after eating; each effect says what happens and how it shows.
-  function bodyEffects(n, tier) {
-    n = n || {};
+  // Ingredient flags with strong long-term evidence of their own.
+  function riskFlags(r) {
+    const items = r?.items || [];
+    return {
+      nitrite: items.some(i => /^(249|250|251|252)$/.test(i.code || "") || /nitrite|nitrate|cured|curing salt/i.test(i.name)),
+      trans: items.some(i => /hydrogenated/i.test(i.name) && !/fully hydrogenated/i.test(i.name)),
+    };
+  }
+  // Long-run links, worded as risk over years (WHO, IARC, BMJ 2024 umbrella review, Lancet 2019 fibre review).
+  const LONG = {
+    sugar: "Over years: type 2 diabetes, weight gain, fatty liver and tooth decay.",
+    salt: "Over years: high blood pressure, which leads to stroke, heart disease and kidney disease.",
+    satfat: "Over years: raised LDL cholesterol and heart disease.",
+    big: "Over years of overeating: weight gain, type 2 diabetes and heart disease.",
+    upf: "Eaten daily, linked to heart disease, type 2 diabetes, obesity, depression and anxiety, and dying younger.",
+    nitrite: "Processed meat is a known cause of bowel cancer. Every 50 g a day raises the risk by about 18%.",
+    trans: "Over years: heart disease. Trans fat is the most harmful fat for your heart.",
+    fibre: "Over years: lower risk of bowel cancer, heart disease and type 2 diabetes.",
+    whole: "Over years: diets built on whole foods are linked to longer, healthier lives.",
+  };
+  function bodyEffects(n, tier, flags) {
+    n = n || {}; flags = flags || {};
     const out = [];
+    if (flags.nitrite) out.push({ key: "nitrite", bad: true, until: 240,
+      title: "Cured meat",
+      text: "Nitrites keep the meat pink. In your gut they can form N-nitroso compounds that damage the bowel lining.",
+      now: () => "Nitrites from the cured meat are moving through your gut." });
+    if (flags.trans) out.push({ key: "trans", bad: true, until: 240,
+      title: "Trans fat",
+      text: "Partly hydrogenated fat raises your bad cholesterol and lowers your good cholesterol.",
+      now: () => "Trans fat is being absorbed and packed into your cholesterol." });
     const sug = n.sugars || 0, fib = n.fibre || 0;
     if (sug >= 12 && fib < 5) out.push({ key: "sugar", bad: true, until: 150,
       title: "Sugar rush, then a dip",
       text: "Sugar reaches your blood in 15–30 minutes. Your pancreas pumps out insulin to clear it, and the drop 1–2 hours later often leaves you tired, foggy or hungry again.",
       now: m => m < 30 ? "Blood sugar is climbing. Insulin is on its way." : "Insulin is pulling your blood sugar back down. An energy dip is likely around now." });
-    if ((n.sodium || 0) >= 600) out.push({ key: "salt", bad: true, until: 360,
+    if ((n.sodium || 0) >= 500) out.push({ key: "salt", bad: true, until: 360,
       title: "Holding water",
       text: "Your kidneys hold on to water to dilute the salt. You may feel thirsty or puffy, and your blood pressure rises for a few hours.",
       now: () => "Your kidneys are holding water to dilute the salt. Drink water." });
@@ -1725,12 +1756,13 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
       title: "No clean-up needed",
       text: "Real food. Your body knows exactly what to do with it: digest, absorb, done.",
       now: () => "Real food. Your body is just using it." });
+    for (const e of out) e.long = e.key === "fat" ? ((n.sat_fat || 0) >= 10 ? LONG.satfat : null) : (LONG[e.key] || null);
     return out;
   }
   // One line for a scan result: the most important thing this food will make your body do.
   function bodyLine(r) {
     const g = r.nip?.serving_g || 100;
-    const fx = bodyEffects(portion(r.nip, g), r.tier);
+    const fx = bodyEffects(portion(r.nip, g), r.tier, riskFlags(r));
     const top = fx.find(e => e.bad) || fx[0];
     return top ? { ...top, per: r.nip?.serving_g ? "a serve" : "100 g" } : null;
   }
@@ -1774,6 +1806,7 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
     return { moves, stops, need, hopeless: need > 40 };
   }
 
+  const LONG_NOTE = `<p class="hint" style="margin:8px 0 0">"Over years" links come from large population studies (WHO, IARC, BMJ, Lancet). They describe risk across many people eating this way regularly, not a diagnosis.</p>`;
   function renderDashboard(entries, t, isToday, blunt) {
     if (!entries.length) return "";
     const { score, parts, hasN } = dayScore(entries, t);
@@ -1791,16 +1824,16 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
       </div>` : `<p class="hint" style="margin:0">${blunt ? "Each whole food adds +8. Each ultra-processed one costs −10." : "Whole foods add 8 points each; ultra-processed foods take away 10."}</p>`;
     // Body: what's happening now (today, recent entries) or what that day asked of it.
     const nowMin = e => (Date.now() - (e.at || 0)) / 60000;
-    const live = isToday ? entries.flatMap(e => bodyEffects(e.n, e.tier).filter(fx => nowMin(e) <= fx.until).map(fx => ({ fx, e, m: nowMin(e) }))) : [];
+    const live = isToday ? entries.flatMap(e => bodyEffects(e.n, e.tier, e.flags).filter(fx => nowMin(e) <= fx.until).map(fx => ({ fx, e, m: nowMin(e) }))) : [];
     const seen = new Set();
     const liveUniq = live.sort((a, b) => (b.fx.bad - a.fx.bad) || (a.m - b.m)).filter(x => !seen.has(x.fx.key) && seen.add(x.fx.key)).slice(0, 3);
     const ago = m => m < 1 ? "just now" : m < 60 ? `${Math.round(m)} min ago` : `${Math.round(m / 6) / 10} h ago`;
     const dayFx = new Map();
-    for (const e of entries) for (const fx of bodyEffects(e.n, e.tier)) if (!dayFx.has(fx.key)) dayFx.set(fx.key, { fx, e });
+    for (const e of entries) for (const fx of bodyEffects(e.n, e.tier, e.flags)) if (!dayFx.has(fx.key)) dayFx.set(fx.key, { fx, e });
     const body = liveUniq.length
-      ? `<div class="body"><h4>What your body is doing now</h4><ul class="fx">${liveUniq.map(({ fx, e, m }) => `<li class="${fx.bad ? "bad" : "good"}"><b>${esc(fx.title)}</b><span>${esc(fx.now(m))}</span><small>${esc(e.name)} · ${ago(m)}</small></li>`).join("")}</ul></div>`
+      ? `<div class="body"><h4>What your body is doing now</h4><ul class="fx">${liveUniq.map(({ fx, e, m }) => `<li class="${fx.bad ? "bad" : "good"}"><b>${esc(fx.title)}</b><span>${esc(fx.now(m))}</span>${fx.long ? `<em class="long">${esc(fx.long)}</em>` : ""}<small>${esc(e.name)} · ${ago(m)}</small></li>`).join("")}</ul>${LONG_NOTE}</div>`
       : dayFx.size
-        ? `<div class="body"><h4>${isToday ? "What your body dealt with today" : "What your body dealt with"}</h4><ul class="fx">${[...dayFx.values()].sort((a, b) => b.fx.bad - a.fx.bad).slice(0, 3).map(({ fx, e }) => `<li class="${fx.bad ? "bad" : "good"}"><b>${esc(fx.title)}</b><span>${esc(fx.text)}</span><small>from ${esc(e.name)}</small></li>`).join("")}</ul></div>`
+        ? `<div class="body"><h4>${isToday ? "What your body dealt with today" : "What your body dealt with"}</h4><ul class="fx">${[...dayFx.values()].sort((a, b) => b.fx.bad - a.fx.bad).slice(0, 3).map(({ fx, e }) => `<li class="${fx.bad ? "bad" : "good"}"><b>${esc(fx.title)}</b><span>${esc(fx.text)}</span>${fx.long ? `<em class="long">${esc(fx.long)}</em>` : ""}<small>from ${esc(e.name)}</small></li>`).join("")}</ul>${LONG_NOTE}</div>`
         : "";
     return `
       <div class="dash ${pos ? "up" : "down"}">
