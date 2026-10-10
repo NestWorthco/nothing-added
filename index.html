@@ -184,6 +184,29 @@ label.small { font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
 .targets input { width: 100%; }
 .empty { color: var(--muted); font-size: 14px; margin: 0; }
 @media (max-width: 480px) { .bar-row { grid-template-columns: 92px 1fr 96px; gap: 8px; font-size: 13px; } .bar-row .w { display: none; } }
+.hero { width: 100%; justify-content: center; padding: 20px 16px; font-size: 19px; border-radius: 14px; }
+.hero svg { width: 26px; height: 26px; }
+.links { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+.link { background: none; border: 0; padding: 4px 0; color: var(--accent); font: 600 14px var(--body); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+details.opt { border: 0; padding: 0; background: transparent; }
+details.opt > summary { color: var(--accent); font-weight: 600; font-size: 14px; padding: 4px 0; }
+details.opt[open] > summary { margin-bottom: 8px; }
+.verdict2 { display: grid; gap: 2px; }
+.verdict2 h3 { font-size: 30px; font-weight: 900; font-stretch: 75%; text-transform: uppercase; color: var(--tier); line-height: 1; }
+.verdict2 .step { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lifechip { margin: 0; font-family: var(--mono); font-size: 14px; color: var(--t5); font-weight: 500; }
+.facts { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 16px; line-height: 1.45; }
+.next { display: grid; gap: 10px; background: var(--paper); border-radius: 10px; padding: 12px 14px; }
+.next-line { margin: 0; font-weight: 700; font-size: 16px; }
+.next .logit { border-top: 0; padding-top: 0; }
+.serves { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+details.more { border-top: 2px solid var(--ink); padding-top: 10px; }
+details.more > summary { cursor: pointer; font-family: var(--display); font-weight: 800; font-stretch: 80%; text-transform: uppercase; letter-spacing: 0.04em; font-size: 15px; }
+.more-body { display: grid; gap: 16px; margin-top: 14px; }
+.namebox { display: grid; gap: 6px; }
+.namebox input { flex: 1 1 200px; min-width: 0; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 8px; padding: 9px 10px; font: 16px var(--body); }
+.hist .more-link { justify-self: start; }
 .tone { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
 .tone .tabs { margin: 0; }
 .tone .tabs button { padding: 4px 10px; font-size: 13px; }
@@ -236,10 +259,7 @@ details p { color: var(--muted); font-size: 14px; }
   <header>
     <span class="eyebrow">Label scanner · NZ &amp; AU packaging</span>
     <h1>Nothing Added</h1>
-    <p>Photograph the ingredients list and the nutrition information panel. You'll see how close the product is to its raw ingredients, and exactly what's been added.</p>
-    <div class="tone"><span>Tone</span><div class="tabs" role="group" aria-label="Tone">
-      <button id="tone-blunt" aria-selected="true">Brutal</button><button id="tone-calm" aria-selected="false">Calm</button>
-    </div></div>
+    <p>Scan it. See exactly what's been added.</p>
   </header>
 
   <nav class="nav" role="tablist" aria-label="Sections">
@@ -255,32 +275,33 @@ details p { color: var(--muted); font-size: 14px; }
     </div>
 
     <div id="pane-photo" class="pane" style="display:grid;gap:12px">
-      <div class="scanbtns">
-        <label class="btn primary bigscan" for="cam-bc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M15.5 8v8M17.5 8v8"/></svg>Scan barcode<input id="cam-bc" type="file" accept="image/*" capture="environment"></label>
-        <label class="btn bigscan alt" for="cam"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>Photograph label<input id="cam" type="file" accept="image/*" capture="environment"></label>
-      </div>
-      <p class="hint">Scan the barcode to bring up anything you've checked before. For a new product, photograph the ingredients and the nutrition panel (up to 3 photos), then tap Read label.</p>
-      <div class="row">
-        <label class="btn" for="pick">Photo library<input id="pick" type="file" accept="image/*" multiple></label>
-        <button id="clear-photos" class="btn" hidden>Clear</button>
-      </div>
+      <label class="btn primary bigscan hero" for="cam"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M15.5 8v8M17.5 8v8"/></svg>Scan a product<input id="cam" type="file" accept="image/*" capture="environment"></label>
+      <p class="hint">Photograph the barcode or the ingredients list. One photo is enough.</p>
       <div id="barcode-box" class="barcode" hidden></div>
       <div id="thumbs" class="thumbs"></div>
       <div class="row" id="read-row" hidden>
-        <button id="scan" class="btn primary bigscan" disabled>Read label</button>
+        <label class="btn" for="cam-more">Add another photo<input id="cam-more" type="file" accept="image/*" capture="environment"></label>
+        <button id="scan" class="btn" disabled>Read again</button>
         <button id="stop" class="btn" hidden>Stop</button>
+      </div>
+      <div class="links">
+        <label class="link" for="pick">Choose from photos<input id="pick" type="file" accept="image/*" multiple hidden></label>
+        <button id="clear-photos" class="link" hidden>Start over</button>
       </div>
       <p id="reader-note" class="hint">Text is read on your phone. Check the result against the pack.</p>
     </div>
 
     <div id="pane-text" class="pane" style="display:none;gap:12px">
+      <label class="small" for="pname">Product name
+        <input id="pname" type="text" placeholder="e.g. Pams drinking chocolate" style="width:100%;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:10px 12px;font:14px var(--body)">
+      </label>
       <label class="small" for="ing">Ingredients, as printed
         <textarea id="ing" placeholder="e.g. Wheat flour, sugar, vegetable oil (palm), emulsifier (soy lecithin, 476), raising agents (500, 450), salt, flavour."></textarea>
       </label>
-      <label class="small" for="pname">Product name (optional)
-        <input id="pname" type="text" style="width:100%;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:10px 12px;font:14px var(--body)">
-      </label>
-      <span class="hint">Nutrition per 100 g, from the NIP (optional)</span>
+      <div class="row"><button id="check" class="btn primary bigscan">Check ingredients</button></div>
+      <details class="opt">
+        <summary>Add nutrition (optional)</summary>
+        <p class="hint">Per 100 g, from the nutrition panel.</p>
       <div class="nip-in">
         <label class="small" for="n-kj">Energy kJ<input id="n-kj" inputmode="decimal"></label>
         <label class="small" for="n-pro">Protein g<input id="n-pro" inputmode="decimal"></label>
@@ -292,19 +313,29 @@ details p { color: var(--muted); font-size: 14px; }
         <label class="small" for="n-na">Sodium mg<input id="n-na" inputmode="decimal"></label>
         <label class="small" for="n-serve">Serving size g<input id="n-serve" inputmode="decimal"></label>
       </div>
-      <div class="row"><button id="check" class="btn primary">Check ingredients</button></div>
+      </details>
     </div>
 
     <p id="status" class="status" role="status"></p>
-    <div class="examples"><span class="hint">Try an example:</span></div>
+    <details class="opt ex-wrap"><summary>Try an example</summary><div class="examples"></div></details>
+  </section>
+
+  <section id="history-wrap" hidden style="display:grid;gap:10px">
+    <span class="eyebrow">Recent</span>
+    <div id="history" class="hist"></div>
   </section>
 
   <section id="result" aria-live="polite"></section>
 
-  <section id="history-wrap" hidden style="display:grid;gap:10px">
-    <span class="eyebrow">Your recent scans · kept on this device</span>
-    <div id="history" class="hist"></div>
-  </section>
+
+
+  <details>
+    <summary>Settings</summary>
+    <div class="tone" style="margin-top:10px"><span>Tone</span><div class="tabs" role="group" aria-label="Tone">
+      <button id="tone-blunt" aria-selected="true">Brutal</button><button id="tone-calm" aria-selected="false">Calm</button>
+    </div></div>
+    <p>Brutal is blunt and includes rough life-cost estimates. Calm sticks to the facts on the label.</p>
+  </details>
 
   <details>
     <summary>How the scale works</summary>
@@ -337,14 +368,14 @@ details p { color: var(--muted); font-size: 14px; }
       <div class="row" id="add-manual" hidden>
         <input id="add-grams" type="number" inputmode="decimal" placeholder="grams" style="width:100px">
         <select id="add-tier" aria-label="Processing step">
-          <option value="1">1 · Single ingredient</option><option value="2">2 · Whole foods</option><option value="3">3 · Kitchen-made</option><option value="4">4 · Processed</option><option value="5">5 · Ultra-processed</option>
+          <option value="0" selected>Not sure how processed</option><option value="1">1 · Single ingredient</option><option value="2">2 · Whole foods</option><option value="3">3 · Kitchen-made</option><option value="4">4 · Processed</option><option value="5">5 · Ultra-processed</option>
         </select>
       </div>
       <p id="add-status" class="status" role="status"></p>
     </section>
 
     <section style="display:grid;gap:10px">
-      <span class="eyebrow">Last 7 days · minutes of life lost to ultra-processed food</span>
+      <span class="eyebrow" id="week-title">Last 7 days · minutes of life lost to ultra-processed food</span>
       <div id="week" class="week"></div>
     </section>
 
@@ -708,6 +739,7 @@ details p { color: var(--muted); font-size: 14px; }
     try { localStorage.setItem("nothing-added-tone", t); } catch {}
     if (current) render(current);
     if (LOG.ready) renderLog();
+    renderHist();
   }
 
   // ---------- Rendering ----------
@@ -718,16 +750,55 @@ details p { color: var(--muted); font-size: 14px; }
   function level(v, lo, hi) { if (v == null || isNaN(v)) return ""; return v <= lo ? '<span class="lo">Low</span>' : v > hi ? '<span class="hi">High</span>' : '<span class="md">Med</span>'; }
   const fmt = (v, u) => v == null || isNaN(v) ? "–" : (Math.round(v * 10) / 10) + " " + u;
 
+  // One short summary up front (verdict, three facts, one next step). Everything else sits under "See details".
+  const NEXT = {
+    blunt: [null,
+      "Buy it. This is what food should look like.",
+      "Buy it. Real food, nothing to forgive.",
+      "Fine. Just watch the sugar, salt and oil.",
+      "Look for one with fewer ingredients and no additive numbers.",
+      "Put it back. Find one with under 5 ingredients and no numbers."],
+    calm: [null,
+      "A single, unprocessed ingredient.",
+      "Whole ingredients only.",
+      "Fine in moderation. Check the sugar and salt.",
+      "Compare it with one that has fewer ingredients and no additive numbers.",
+      "Compare it with a product that has fewer ingredients and no additive numbers."],
+  };
+  const factText = c => typeof c === "string" ? c : c[tone];
+  function keyFacts(r) {
+    const all = r.checks.map(factText).filter(t => !/^From Open Food Facts/.test(t));
+    const facts = all.slice(0, 3);
+    if (facts.length < 3) {
+      const first = r.items[0];
+      if (first && !facts.some(f => f.includes(first.name))) facts.push(`${r.items.length} ingredient${r.items.length > 1 ? "s" : ""}. The main one is ${first.name.toLowerCase()}${first.pct != null ? ` (${first.pct}%)` : ""}.`);
+    }
+    if (facts.length < 3 && r.nip?.sugars != null) facts.push(`${fmt(r.nip.sugars, "g")} of sugars per 100 g.`);
+    return facts.slice(0, 3);
+  }
+  function logControls(r) {
+    const sv = r.nip?.serving_g;
+    return `<div class="logit">
+      ${sv ? `<div class="serves" role="group" aria-label="How much">${[[0.5, "½ serve"], [1, "1 serve"], [2, "2 serves"]].map(([m, l]) => `<button class="chip serve${m === 1 ? " on" : ""}" data-g="${Math.round(sv * m)}">${l}</button>`).join("")}</div>` : ""}
+      <label for="log-grams" class="hint">${sv ? "or" : "I ate"}</label>
+      <input id="log-grams" type="number" inputmode="decimal" min="1" value="${sv || 100}"><span class="hint">g</span>
+      <button id="log-add" class="btn primary">Add to log</button>
+      <span id="log-msg" class="hint" role="status"></span>
+    </div>`;
+  }
+
   function render(r) {
     const el = $("result");
     current = r;
+    saveDraft();
     if (!r) { el.innerHTML = ""; return; }
     if (!r.tier) {
       el.innerHTML = `<div class="panel"><p>No ingredients found. Check the photo shows the ingredients list clearly, or type it in.</p></div>`;
       return;
     }
     const T = TIERS[r.tier];
-    const ladder = [1, 2, 3, 4, 5].map(i => `<div class="${i === r.tier ? "on" : ""}"><span class="bar" style="${i === r.tier ? "" : ""}"></span><span><b>${i}</b>${TIERS[i].short}</span></div>`).join("");
+    const blunt = tone === "blunt";
+    const ladder = [1, 2, 3, 4, 5].map(i => `<div class="${i === r.tier ? "on" : ""}"><span class="bar"></span><span><b>${i}</b>${TIERS[i].short}</span></div>`).join("");
     const ings = r.items.map(i => `
       <li class="k-${i.kind}">
         <span class="dot" aria-hidden="true"></span>
@@ -750,47 +821,110 @@ details p { color: var(--muted); font-size: 14px; }
           ${r.nip.sodium != null ? `<tr><th>Sodium</th><td>${fmt(r.nip.sodium, "mg")}</td><td class="lvl">${level(r.nip.sodium, 120, 600)}</td></tr>` : ""}
         </tbody></table></div>
       </div>` : "";
+    const facts = keyFacts(r);
+    const rest = r.checks.map(factText).filter(t => !facts.includes(t));
+    const source = r.checks.map(factText).find(t => /^From Open Food Facts/.test(t));
+    const named = !!r.product;
     el.innerHTML = `
       <article class="panel t${r.tier}" style="--tier:${tierColor(r.tier)}">
         <div class="panel-head">
-          <span class="eyebrow">${r.example ? '<span class="tag-example">Example</span>' : ""}<span>${tone === "blunt" ? "The truth about this" : "Where it sits"}</span></span>
-          <h2>${esc(r.product || "Scanned product")}</h2>
+          ${r.example ? '<span class="eyebrow"><span class="tag-example">Example</span></span>' : ""}
+          ${named ? `<h2>${esc(r.product)}</h2>` : `<div class="namebox"><label for="name-it" class="hint">Name this product so you can find it later</label>
+            <div class="row"><input id="name-it" type="text" placeholder="e.g. Pams drinking chocolate"><button id="name-save" class="btn">Save</button></div></div>`}
         </div>
-        <div class="verdict">
-          <div class="score">${r.score}<small>Purity</small></div>
-          <div><h3>${T.name}</h3>${tone === "calm" ? `<p>${T.blurb}</p>` : ""}</div>
+        <div class="verdict2">
+          <h3>${T.name}</h3>
+          <span class="step">Step ${r.tier} of 5 · processing score ${r.score}/100</span>
         </div>
-        ${tone === "blunt" ? `<p class="punch">${esc(BLUNT[r.tier].punch)}</p><p>${esc(BLUNT[r.tier].line)}</p>` : ""}
-        ${lifeHTML(r)}
-        <div class="ladder" aria-label="Processing scale, step ${r.tier} of 5">${ladder}</div>
-        <div class="logit">
-          <label for="log-grams" class="hint">I ate</label>
-          <input id="log-grams" type="number" inputmode="decimal" min="1" value="${r.nip?.serving_g || 100}">
-          <span class="hint">g${r.nip?.serving_g ? ` (1 serve = ${r.nip.serving_g} g)` : ""}</span>
-          <button id="log-add" class="btn primary">Add to today's log</button>
-          <span id="log-msg" class="hint" role="status"></span>
+        ${blunt ? `<p class="punch">${esc(BLUNT[r.tier].punch)}</p>` : ""}
+        ${blunt && r.tier === 5 ? `<p class="lifechip">≈ −${MIN_PER_SERVING} min of life a serve <span class="hint">· rough estimate, see details</span></p>` : ""}
+        ${facts.length ? `<ul class="facts">${facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
+        ${source ? `<p class="hint" style="margin:0">${esc(source)}</p>` : ""}
+        <div class="next">
+          <p class="next-line">${esc(NEXT[blunt ? "blunt" : "calm"][r.tier])}</p>
+          ${logControls(r)}
+          <button class="btn" data-scan-again>Scan another</button>
         </div>
-        ${r.checks.length ? `<div class="sect"><h4>What the label tells you</h4><ul class="checks">${r.checks.map(c => `<li>${esc(typeof c === "string" ? c : c[tone])}</li>`).join("")}</ul></div>` : ""}
-        ${EVIDENCE[r.tier] && (tone === "blunt" || r.tier === 5) ? `<div class="evidence"><h4 style="margin:0;font-family:var(--display);text-transform:uppercase;font-stretch:80%">${EVIDENCE[r.tier].head}</h4><ul>${EVIDENCE[r.tier].items.map(x => `<li>${esc(x)}</li>`).join("")}</ul><span class="src">${esc(EVIDENCE[r.tier].src)}</span></div>` : ""}
-        <div class="sect"><h4>Ingredients · ${r.items.length}</h4>
-          <div class="counts">${counts}</div>
-          <ul class="ings">${ings}</ul>
-        </div>
-        ${nip}
+        <details class="more">
+          <summary>See details</summary>
+          <div class="more-body">
+            <div class="ladder" aria-label="Processing scale, step ${r.tier} of 5">${ladder}</div>
+            ${blunt ? `<p>${esc(BLUNT[r.tier].line)}</p>` : `<p>${esc(T.blurb)}</p>`}
+            ${blunt ? lifeHTML(r) : ""}
+            ${rest.length ? `<div class="sect"><h4>More from the label</h4><ul class="checks">${rest.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>` : ""}
+            ${EVIDENCE[r.tier] ? `<div class="evidence"><h4 style="margin:0;font-family:var(--display);text-transform:uppercase;font-stretch:80%">${EVIDENCE[r.tier].head}</h4><ul>${EVIDENCE[r.tier].items.map(x => `<li>${esc(x)}</li>`).join("")}</ul><span class="src">${esc(EVIDENCE[r.tier].src)}</span></div>` : ""}
+            <div class="sect"><h4>Ingredients · ${r.items.length}</h4>
+              <div class="counts">${counts}</div>
+              <ul class="ings">${ings}</ul>
+            </div>
+            ${nip}
+          </div>
+        </details>
       </article>`;
   }
+
+  // Result-card controls: serving shortcuts, naming, scan again.
+  $("result").addEventListener("click", e => {
+    const sv = e.target.closest(".serve");
+    if (sv) {
+      $("log-grams").value = sv.dataset.g;
+      document.querySelectorAll(".serve").forEach(b => b.classList.toggle("on", b === sv));
+      return;
+    }
+    if (e.target.closest("[data-scan-again]")) { resetScan(); return; }
+    if (e.target.id === "name-save") nameCurrent();
+  });
+  $("result").addEventListener("keydown", e => { if (e.target.id === "name-it" && e.key === "Enter") nameCurrent(); });
+  function nameCurrent() {
+    const v = ($("name-it")?.value || "").trim();
+    if (!v || !current) return;
+    current.product = v;
+    if (current.barcode) saveProduct(current.barcode, current);
+    const h = loadHist(); const i = h.findIndex(x => x.at === current.at);
+    if (i >= 0) { h[i].product = v; saveHist(h); renderHist(); }
+    render(current);
+  }
+
+  // ---------- Pick up where you left off ----------
+  // Phones reload web pages after you switch apps; keep the last result and anything typed.
+  function saveDraft() {
+    try {
+      const d = { current: current && !current.example ? current : null, ing: $("ing").value, pname: $("pname").value, nip: {} };
+      for (const id of ["n-kj", "n-pro", "n-fat", "n-sat", "n-carb", "n-sug", "n-fib", "n-na", "n-serve"]) d.nip[id] = $(id).value;
+      localStorage.setItem("na-draft", JSON.stringify(d));
+    } catch {}
+  }
+  function restoreDraft() {
+    try {
+      const d = JSON.parse(localStorage.getItem("na-draft") || "null");
+      if (!d) return;
+      $("ing").value = d.ing || ""; $("pname").value = d.pname || "";
+      for (const [id, v] of Object.entries(d.nip || {})) if ($(id)) $(id).value = v;
+      if (d.current) render(d.current);
+    } catch {}
+  }
+  $("pane-text").addEventListener("input", saveDraft);
 
   // ---------- History (this device only) ----------
   const HKEY = "nothing-added-history";
   const loadHist = () => { try { return JSON.parse(localStorage.getItem(HKEY) || "[]"); } catch { return []; } };
   const saveHist = h => { try { localStorage.setItem(HKEY, JSON.stringify(h.slice(0, 15))); } catch {} };
-  function pushHist(r) { if (r.example || !r.tier) return; const h = loadHist(); h.unshift(r); saveHist(h); renderHist(); }
+  function pushHist(r) {
+    if (r.example || !r.tier) return;
+    const same = x => (r.barcode && x.barcode === r.barcode) || (r.product && x.product === r.product);
+    const h = loadHist().filter(x => !same(x));
+    h.unshift(r); saveHist(h); renderHist();
+  }
+  let histAll = false;
   function renderHist() {
     const h = loadHist();
     $("history-wrap").hidden = !h.length;
-    $("history").innerHTML = h.map((r, i) => `<button data-i="${i}" style="--tier:${tierColor(r.tier)}"><span class="s">${r.score}</span><span class="nm">${esc(r.product || "Scanned product")}<br><span class="t">${TIERS[r.tier].name}${r.tier === 5 ? " · −" + MIN_PER_SERVING + " min a serve" : ""} · ${new Date(r.at).toLocaleDateString()}</span></span><span class="t">›</span></button>`).join("");
+    const shown = histAll ? h : h.slice(0, 3);
+    $("history").innerHTML = shown.map((r, i) => `<button data-i="${i}" style="--tier:${tierColor(r.tier)}"><span class="s">${r.score}</span><span class="nm">${esc(r.product || "Scanned product")}<br><span class="t">${TIERS[r.tier].name}${r.tier === 5 && tone === "blunt" ? " · −" + MIN_PER_SERVING + " min a serve" : ""}</span></span><span class="t">›</span></button>`).join("")
+      + (h.length > 3 ? `<button class="link more-link" data-hist-toggle>${histAll ? "Show fewer" : `Show all ${h.length}`}</button>` : "");
   }
   $("history").addEventListener("click", e => {
+    if (e.target.closest("[data-hist-toggle]")) { histAll = !histAll; renderHist(); return; }
     const b = e.target.closest("button[data-i]"); if (!b) return;
     const r = loadHist()[+b.dataset.i]; if (r) { render(r); $("result").scrollIntoView({ behavior: "smooth", block: "start" }); }
   });
@@ -870,7 +1004,7 @@ details p { color: var(--muted); font-size: 14px; }
     const off = `<a href="https://world.openfoodfacts.org/product/${encodeURIComponent(code)}" target="_blank" rel="noopener">See it on Open Food Facts</a>`;
     box.innerHTML = `<span class="code">${esc(code)}</span> ${state === "known"
       ? "<b>In your library.</b> Showing your saved result."
-      : `<b>New product.</b> Photograph the ingredients and nutrition panel, then tap Read label. It'll be saved to this barcode, so next time the barcode is enough. ${off}`}`;
+      : `<b>New product.</b> Photograph its ingredients list next. It'll be saved to this barcode, so next time the barcode is enough. ${off}`}`;
   }
 
   // ---------- Barcode decoding (on the phone, ZXing) ----------
@@ -1022,38 +1156,35 @@ details p { color: var(--muted); font-size: 14px; }
     $("clear-photos").hidden = !photos.length;
     $("read-row").hidden = !photos.length;
   }
-  async function onPhotos(files, fromBarcodeButton) {
+  // One button: look for a barcode first (library, then Open Food Facts); otherwise read the label straight away.
+  async function onPhotos(files, mode) {
     files = [...files];
     if (!files.length) return;
-    if (fromBarcodeButton) { photos = []; }
+    if (mode === "new") { photos = []; photoBarcode = pendingBarcode = null; showBarcode(null); render(null); }
     photos = photos.concat(files).slice(-maxImages);
     drawThumbs();
-    if (!window.ZXing) { if (fromBarcodeButton) setStatus("The barcode reader didn't load. Check your connection and reopen the app.", true); return; }
-    setStatus("Looking for a barcode…");
-    let code = null;
-    for (const f of files) { code = await decodeBarcode(f); if (code) break; }
-    if (!code) {
-      if (fromBarcodeButton) {
-        setStatus("Couldn't find a barcode in that photo. Get close enough that the barcode fills most of the frame, keep it flat and in focus, and try again.", true);
-        photos = []; drawThumbs();
-      } else setStatus("");
-      return;
+    if (mode === "new" && window.ZXing) {
+      setStatus("Looking for a barcode…");
+      let code = null;
+      for (const f of files) { code = await decodeBarcode(f); if (code) break; }
+      if (code) {
+        photoBarcode = pendingBarcode = code;
+        const known = await getProduct(code);
+        if (known) {
+          photoBarcode = pendingBarcode = null;
+          showBarcode(code, "known"); setStatus("");
+          const r = { ...known, at: Date.now() };
+          render(r); pushHist(r);
+          $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        if (await lookupOFF(code)) return;
+        showBarcode(code, "new");
+      }
     }
-    photoBarcode = code; pendingBarcode = code;
-    const known = await getProduct(code);
-    if (known) {
-      photoBarcode = pendingBarcode = null; // done with this product; the next photos are a new one
-      showBarcode(code, "known"); setStatus("");
-      if (fromBarcodeButton) { photos = []; drawThumbs(); }
-      render({ ...known, at: Date.now() }); pushHist({ ...known, at: Date.now() });
-      $("result").scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      if (fromBarcodeButton) { photos = []; drawThumbs(); }
-      const off = await lookupOFF(code);
-      if (off) return;
-      showBarcode(code, "new"); setStatus("");
-    }
+    readLabel();
   }
+
 
   // Open Food Facts lookup. Only works when the app runs on its own website: inside Claude the page can't reach other sites.
   const STANDALONE = !window.claude;
@@ -1092,9 +1223,15 @@ details p { color: var(--muted); font-size: 14px; }
     photoBarcode = pendingBarcode = null;
     return true;
   }
-  $("cam-bc").onchange = e => { const f = e.target.files; onPhotos(f, true); e.target.value = ""; };
-  $("cam").onchange = e => { const f = e.target.files; onPhotos(f, false); e.target.value = ""; };
-  $("pick").onchange = e => { const f = e.target.files; onPhotos(f, false); e.target.value = ""; };
+  $("cam").onchange = e => { const f = e.target.files; onPhotos(f, "new"); e.target.value = ""; };
+  $("cam-more").onchange = e => { const f = e.target.files; onPhotos(f, "more"); e.target.value = ""; };
+  $("pick").onchange = e => { const f = e.target.files; onPhotos(f, "new"); e.target.value = ""; };
+  function resetScan() {
+    photos = []; photoBarcode = pendingBarcode = null;
+    showBarcode(null); drawThumbs(); setStatus(""); render(null); showTab("photo");
+    window.scrollTo({ top: 0 });
+    $("cam").click();
+  }
   $("clear-photos").onclick = () => { photos = []; photoBarcode = null; pendingBarcode = null; showBarcode(null); drawThumbs(); setStatus(""); };
 
   const PROMPT_RULES = `Reply with only one JSON object in this shape:
@@ -1161,7 +1298,8 @@ ${PROMPT_RULES}`;
     return { text, rows };
   }
 
-  $("scan").onclick = async () => {
+  $("scan").onclick = () => readLabel();
+  async function readLabel() {
     if (!photos.length) return;
     ctl = new AbortController();
     const signal = ctl.signal;
@@ -1205,7 +1343,11 @@ ${PROMPT_RULES}`;
       const ex = extractLabel(text, rows);
       fillTextForm("", ex.ingredients, ex.nip);
       showTab("text");
-      if (!ex.ingredients) { setStatus("Couldn't find the word \"Ingredients\" in that photo. Photograph the ingredients list up close, or type it below.", true); return; }
+      if (!ex.ingredients) {
+        showTab("photo");
+        setStatus(photoBarcode ? "New product. Now photograph the ingredients list: tap Add another photo." : "Couldn't find an ingredients list in that photo. Get closer to it and tap Add another photo, or type it in.", true);
+        return;
+      }
       const r = analyse({ product: null, ingredientsText: ex.ingredients, leaves: parseIngredients(ex.ingredients), nip: ex.nip });
       finishResult(r, photoBarcode);
       setStatus("Read on your phone. Phone text reading makes mistakes, so check the ingredients and numbers above against the pack. Fix anything wrong and tap Check ingredients.");
@@ -1220,7 +1362,7 @@ ${PROMPT_RULES}`;
     } finally {
       $("stop").hidden = true; $("scan").disabled = !photos.length;
     }
-  };
+  }
   $("stop").onclick = () => ctl?.abort();
 
   function setReaderNote() {
@@ -1375,6 +1517,7 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
   };
   $("add-text").addEventListener("keydown", e => { if (e.key === "Enter") $("add-go").click(); });
 
+  const tierName = t => t ? TIERS[t].name : "Processing not known";
   function totals(entries) {
     const t = Object.fromEntries(NUTS.map(n => [n[0], 0]));
     const byTier = [0, 0, 0, 0, 0, 0];
@@ -1404,14 +1547,14 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
     const blunt = tone === "blunt", isToday = viewDay === today;
     const kjAll = byTier.reduce((a, b) => a + b, 0);
     const upfShare = kjAll ? Math.round(byTier[5] / kjAll * 100) : 0;
-    const worst = entries.length ? Math.max(...entries.map(e => e.tier)) : 1;
+    const worst = entries.length ? Math.max(1, ...entries.map(e => e.tier || 0)) : 1;
     const [ln, lu] = minutes >= 90 ? [Math.round(minutes / 6) / 10, "hours"] : [minutes, "minutes"];
 
     let line;
     if (!entries.length) line = isToday ? "Nothing logged yet today. Scan a label, or add a food below." : "Nothing logged on this day.";
     else if (minutes) line = blunt
       ? `${isToday ? "Today" : "That day"}, ultra-processed food took about ${ln} ${lu} off your life.${kjAll ? ` ${upfShare}% of your energy came from food engineered in a factory.` : ""}`
-      : `Estimated life cost of the ultra-processed food logged.${kjAll ? ` ${upfShare}% of energy came from ultra-processed food.` : ""}`;
+      : `${kjAll ? `${upfShare}% of the energy logged came from ultra-processed food.` : "Ultra-processed food logged."}`;
     else line = blunt ? "Nothing ultra-processed. Not a minute lost. This is how you get your time back." : "No ultra-processed food logged.";
 
     const shareBar = kjAll ? `<div class="share" aria-label="Energy by processing step">
@@ -1431,9 +1574,9 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
     const overLine = over.length ? `<p style="margin:0;color:var(--t5);font-weight:600">${blunt ? `Over your ${over.join(", ")} limit${over.length > 1 ? "s" : ""}. Your body has to deal with every gram of it.` : `Over the daily limit for ${over.join(", ")}.`}</p>` : "";
 
     const list = entries.length ? `<ul class="entries">${entries.map(e => `<li style="--tier:var(--t${e.tier})">
-        <span class="tb" title="${TIERS[e.tier].name}">${e.tier}</span>
-        <span class="nm">${esc(e.name)}<small>${Math.round(e.grams)} g${e.n?.energy_kj ? " · " + Math.round(e.n.energy_kj) + " kJ" : ""} · ${TIERS[e.tier].name}${e.src === "estimate" ? " · estimated" : ""}</small></span>
-        <span class="min">${e.minutes ? "−" + e.minutes + " min" : ""}</span>
+        <span class="tb" title="${tierName(e.tier)}" style="${e.tier ? "" : "background:var(--muted)"}">${e.tier || "?"}</span>
+        <span class="nm">${esc(e.name)}<small>${Math.round(e.grams)} g${e.n?.energy_kj ? " · " + Math.round(e.n.energy_kj) + " kJ" : ""} · ${tierName(e.tier)}${e.src === "estimate" ? " · estimated" : ""}</small></span>
+        <span class="min">${blunt && e.minutes ? "−" + e.minutes + " min" : ""}</span>
         <button class="del" data-del="${esc(e.id)}" aria-label="Remove ${esc(e.name)}">×</button></li>`).join("")}</ul>` : "";
 
     const el = $("today");
@@ -1441,8 +1584,10 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
     el.style.setProperty("--tier", `var(--t${minutes ? 5 : worst <= 2 ? 1 : worst})`);
     el.innerHTML = `
       <div class="cost">
-        <span class="eyebrow">${blunt ? "Life lost" : "Estimated life cost"}${LOG.mode === "local" ? " · saved on this device only" : ""}</span>
-        <div class="big">${minutes ? "−" + ln : "0"}<small>${minutes ? lu : "minutes"}</small></div>
+        <span class="eyebrow">${blunt ? "Life lost" : "Ultra-processed share"}${LOG.mode === "local" ? " · saved on this device only" : ""}</span>
+        ${blunt
+          ? `<div class="big">${minutes ? "−" + ln : "0"}<small>${minutes ? lu : "minutes"}</small></div>`
+          : `<div class="big">${upfShare}<small>% of energy</small></div>`}
         <p>${esc(line)}</p>
       </div>
       ${shareBar}${overLine}${bars}${list}`;
@@ -1453,14 +1598,21 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
   function renderWeek() {
     const today = dayKey(Date.now());
     const keys = Array.from({ length: 7 }, (_, i) => shiftDay(today, i - 6));
-    const mins = keys.map(k => totals(LOG.days[k] || []).minutes);
-    const max = Math.max(60, ...mins);
+    const blunt = tone === "blunt";
+    $("week-title").textContent = blunt ? "Last 7 days · minutes of life lost to ultra-processed food" : "Last 7 days · share of energy from ultra-processed food";
+    const mins = keys.map(k => {
+      const t = totals(LOG.days[k] || []);
+      if (blunt) return t.minutes;
+      const all = t.byTier.reduce((a, b) => a + b, 0);
+      return all ? Math.round(t.byTier[5] / all * 100) : 0;
+    });
+    const max = blunt ? Math.max(60, ...mins) : 100;
     $("week").innerHTML = keys.map((k, i) => {
       const has = (LOG.days[k] || []).length;
       const [y, m, d] = k.split("-").map(Number);
       const wd = new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short" });
-      return `<div class="col ${k === viewDay ? "sel" : ""}"><button data-day="${k}" aria-label="${dayLabel(k)}: ${has ? mins[i] + " minutes lost" : "nothing logged"}">
-        <span class="n">${has ? (mins[i] ? "−" + mins[i] : "0") : "–"}</span>
+      return `<div class="col ${k === viewDay ? "sel" : ""}"><button data-day="${k}" aria-label="${dayLabel(k)}: ${has ? mins[i] + (blunt ? " minutes lost" : "% ultra-processed") : "nothing logged"}">
+        <span class="n">${has ? (blunt ? (mins[i] ? "−" + mins[i] : "0") : mins[i] + "%") : "–"}</span>
         <span class="b ${mins[i] ? "" : "zero"}" style="height:${has ? Math.max(3, mins[i] / max * 80) : 0}px"></span>
         <span>${wd}</span></button></div>`;
     }).join("");
@@ -1483,6 +1635,7 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
   function showView(v) {
     $("nav-scan").setAttribute("aria-selected", v === "scan");
     $("nav-log").setAttribute("aria-selected", v === "log");
+    try { localStorage.setItem("na-view", v); } catch {}
     $("view-scan").hidden = v !== "scan";
     $("view-log").hidden = v !== "log";
     if (v === "log") { viewDay = dayKey(Date.now()); renderLog(); }
@@ -1497,10 +1650,11 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
   setTone(tone);
   let tab = "photo"; try { tab = localStorage.getItem("nothing-added-tab") || "photo"; } catch {}
   showTab(tab);
-  render(analyse({ product: EXAMPLES[1].product, ingredientsText: EXAMPLES[1].text, leaves: parseIngredients(EXAMPLES[1].text), nip: EXAMPLES[1].nip, example: true }));
+  restoreDraft();
   renderHist();
   renderTargets();
   initLog();
+  try { if (localStorage.getItem("na-view") === "log") showView("log"); } catch {}
   setReaderNote();
   (window.claude?.use ? window.claude.use("sample") : Promise.resolve(null)).then(async s => {
     if (!s) { enableManualAdd(); setReaderNote(); return; }

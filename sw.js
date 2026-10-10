@@ -1,5 +1,5 @@
 // Nothing Added service worker: the app opens offline, and the barcode and text readers are kept after first use.
-const SHELL = "na-shell-v1", LIBS = "na-libs-v1";
+const SHELL = "na-shell-v2", LIBS = "na-libs-v1";
 const SHELL_FILES = ["/", "/manifest.webmanifest", "/icon.svg", "/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
