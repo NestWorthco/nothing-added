@@ -220,6 +220,25 @@ details.more > summary { cursor: pointer; font-family: var(--display); font-weig
 .lk-badge { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--tier); color: var(--surface); font-family: var(--display); font-weight: 900; font-stretch: 75%; font-size: 16px; }
 .lk-nm { min-width: 0; overflow: hidden; }
 .lk-nm small { display: block; color: var(--muted); font-size: 12.5px; }
+.dash { display: grid; gap: 14px; padding-bottom: 14px; border-bottom: 2px solid var(--ink); }
+.dash-top { display: flex; gap: 14px; align-items: center; }
+.dash-score { font-family: var(--display); font-weight: 900; font-stretch: 70%; font-size: clamp(64px, 18vw, 96px); line-height: 0.85; font-variant-numeric: tabular-nums; }
+.dash.up .dash-score { color: var(--t1); } .dash.down .dash-score { color: var(--t5); }
+.dash-head { margin: 2px 0 0; font-family: var(--display); font-weight: 800; font-stretch: 80%; font-size: 22px; text-transform: uppercase; line-height: 1.05; }
+.dash h4 { margin: 0 0 6px; font-family: var(--display); font-weight: 800; font-stretch: 80%; font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase; }
+.plan { background: var(--paper); border-radius: 10px; padding: 12px 14px; }
+.moves, .stops, .parts, .fx { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.moves li, .parts li { display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: baseline; font-size: 15px; }
+.stops { margin-top: 10px; }
+.stops li { font-size: 14px; color: var(--t5); font-weight: 600; }
+.pts { font-family: var(--mono); font-weight: 500; font-size: 14px; text-align: right; }
+.pts.pos { color: var(--t1); } .pts.neg { color: var(--t5); }
+.fx li { display: grid; gap: 2px; padding-left: 12px; border-left: 4px solid var(--t1); }
+.fx li.bad { border-left-color: var(--t5); }
+.fx li span { font-size: 15px; }
+.fx li small { color: var(--muted); font-size: 12.5px; }
+.bodyline { margin: 0; padding: 10px 12px; border-left: 4px solid var(--t1); background: var(--paper); border-radius: 0 8px 8px 0; font-size: 15px; }
+.bodyline.bad { border-left-color: var(--t5); }
 .tone { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
 .tone .tabs { margin: 0; }
 .tone .tabs button { padding: 4px 10px; font-size: 13px; }
@@ -857,6 +876,7 @@ details p { color: var(--muted); font-size: 14px; }
         ${blunt ? `<p class="punch">${esc(BLUNT[r.tier].punch)}</p>` : ""}
         ${blunt && r.tier === 5 ? `<p class="lifechip">≈ −${MIN_PER_SERVING} min of life a serve <span class="hint">· rough estimate, see details</span></p>` : ""}
         ${facts.length ? `<ul class="facts">${facts.map(f => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
+        ${(() => { const b = bodyLine(r); return b ? `<p class="bodyline ${b.bad ? "bad" : "good"}"><b>Your body${b.per === "a serve" ? ", per serve" : ""}:</b> ${esc(b.title)}. ${esc(b.text)}</p>` : ""; })()}
         ${source ? `<p class="hint" style="margin:0">${esc(source)}</p>` : ""}
         <div class="next">
           <p class="next-line">${esc(NEXT[blunt ? "blunt" : "calm"][r.tier])}</p>
@@ -1667,6 +1687,136 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
     return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
   }
 
+  // ---------- What your body does with it ----------
+  // Rules use the eaten portion's nutrition. Windows are minutes after eating; each effect says what happens and how it shows.
+  function bodyEffects(n, tier) {
+    n = n || {};
+    const out = [];
+    const sug = n.sugars || 0, fib = n.fibre || 0;
+    if (sug >= 12 && fib < 5) out.push({ key: "sugar", bad: true, until: 150,
+      title: "Sugar rush, then a dip",
+      text: "Sugar reaches your blood in 15–30 minutes. Your pancreas pumps out insulin to clear it, and the drop 1–2 hours later often leaves you tired, foggy or hungry again.",
+      now: m => m < 30 ? "Blood sugar is climbing. Insulin is on its way." : "Insulin is pulling your blood sugar back down. An energy dip is likely around now." });
+    if ((n.sodium || 0) >= 600) out.push({ key: "salt", bad: true, until: 360,
+      title: "Holding water",
+      text: "Your kidneys hold on to water to dilute the salt. You may feel thirsty or puffy, and your blood pressure rises for a few hours.",
+      now: () => "Your kidneys are holding water to dilute the salt. Drink water." });
+    if ((n.sat_fat || 0) >= 10 || (n.fat || 0) >= 30) out.push({ key: "fat", bad: true, until: 240,
+      title: "Slow, heavy digestion",
+      text: "Fat slows your stomach right down. Digestion takes hours, so you may feel heavy or sluggish.",
+      now: () => "Your stomach is still working through the fat. Feeling heavy is normal." });
+    if ((n.energy_kj || 0) >= 3000) out.push({ key: "big", bad: true, until: 120,
+      title: "Food coma",
+      text: "A big meal pulls blood to your gut to digest it. Drowsiness afterwards is common.",
+      now: () => "Blood is diverted to your gut to digest a big meal. Drowsiness is likely." });
+    if (tier === 5) out.push({ key: "upf", bad: true, until: 60,
+      title: "Fullness arrives late",
+      text: "Ultra-processed food is soft and quick to eat, so your fullness signals lag behind. In one trial people ate about 500 extra calories a day without noticing.",
+      now: () => "Your fullness signals haven't caught up yet. Wait 20 minutes before eating more." });
+    if (fib >= 4) out.push({ key: "fibre", bad: false, until: 240,
+      title: "Steady energy",
+      text: "Fibre slows sugar into your blood and feeds your gut bacteria. Expect steadier energy and to stay full longer.",
+      now: () => "Fibre is releasing energy slowly and feeding your gut bacteria." });
+    if ((n.protein || 0) >= 15) out.push({ key: "protein", bad: false, until: 240,
+      title: "Staying full",
+      text: "Protein keeps you full and gives your muscles what they need to repair.",
+      now: () => "Protein is keeping you full and repairing muscle." });
+    if ((tier === 1 || tier === 2) && !out.some(e => e.bad)) out.push({ key: "whole", bad: false, until: 180,
+      title: "No clean-up needed",
+      text: "Real food. Your body knows exactly what to do with it: digest, absorb, done.",
+      now: () => "Real food. Your body is just using it." });
+    return out;
+  }
+  // One line for a scan result: the most important thing this food will make your body do.
+  function bodyLine(r) {
+    const g = r.nip?.serving_g || 100;
+    const fx = bodyEffects(portion(r.nip, g), r.tier);
+    const top = fx.find(e => e.bad) || fx[0];
+    return top ? { ...top, per: r.nip?.serving_g ? "a serve" : "100 g" } : null;
+  }
+
+  // ---------- Daily score ----------
+  const TIER_PTS = [0, 8, 6, 2, -4, -10];
+  function dayScore(entries, t) {
+    const T = k => LOG.targets[k] || DEFAULT_TARGETS[k];
+    const parts = [];
+    const add = (label, pts) => { pts = Math.round(pts); if (pts) parts.push({ label, pts }); };
+    const count = tier => entries.filter(e => e.tier === tier).length;
+    for (const tier of [1, 2, 3, 4, 5]) {
+      const c = count(tier);
+      if (c) add(`${c} × ${TIERS[tier].name.toLowerCase()} (${TIER_PTS[tier] > 0 ? "+" : "−"}${Math.abs(TIER_PTS[tier])} each)`, c * TIER_PTS[tier]);
+    }
+    const hasN = entries.some(e => e.n && Object.values(e.n).some(v => v != null));
+    if (hasN) {
+      add(`Fibre ${Math.round(t.fibre)} g of ${T("fibre")} g`, Math.min(15, t.fibre / 2));
+      add(`Protein ${Math.round(t.protein)} g of ${T("protein")} g`, Math.min(10, t.protein / 5));
+      if (t.sugars > T("sugars")) add(`Sugars ${Math.round(t.sugars - T("sugars"))} g over limit`, -Math.min(20, (t.sugars - T("sugars")) / 3));
+      if (t.sodium > T("sodium")) add(`Sodium ${Math.round(t.sodium - T("sodium"))} mg over limit`, -Math.min(15, (t.sodium - T("sodium")) / 100));
+      if (t.sat_fat > T("sat_fat")) add(`Saturated fat ${Math.round(t.sat_fat - T("sat_fat"))} g over limit`, -Math.min(10, (t.sat_fat - T("sat_fat")) / 2));
+      if (t.energy_kj > T("energy_kj") * 1.1) add(`Energy ${Math.round(t.energy_kj - T("energy_kj"))} kJ over`, -Math.min(10, (t.energy_kj - T("energy_kj")) / 200));
+    }
+    const score = parts.reduce((a, p) => a + p.pts, 0);
+    return { score, parts, hasN };
+  }
+  // Concrete moves that add points, biggest first.
+  function toPositive(score, t, hasN, blunt) {
+    const T = k => LOG.targets[k] || DEFAULT_TARGETS[k];
+    const moves = [];
+    const need = Math.max(1, 1 - score);
+    const n = Math.min(4, Math.ceil(need / 8));
+    moves.push({ pts: 8 * n, text: `Eat ${n === 1 ? "one" : n} whole food${n > 1 ? "s" : ""}: fruit, nuts, eggs, plain yoghurt` });
+    if (hasN && t.fibre < T("fibre")) moves.push({ pts: 3, text: "Add vegetables, beans or oats to your next meal (about 6 g fibre)" });
+    if (hasN && t.protein < T("protein")) moves.push({ pts: 4, text: "Add protein: 2 eggs, a tin of tuna or a chicken breast (about 20 g)" });
+    const stops = [];
+    if (hasN && t.sugars > T("sugars") * 0.75) stops.push(blunt ? "No more sugar today. Every 3 g costs a point." : "Avoid more sugar today: every 3 g over the limit costs a point.");
+    if (hasN && t.sodium > T("sodium") * 0.75) stops.push(blunt ? "No more salty food. Drink water." : "Avoid more salty food today and drink water.");
+    stops.push(blunt ? "Nothing ultra-processed for the rest of today. Each one is −10." : "Skip ultra-processed food for the rest of today (−10 each).");
+    return { moves, stops, need, hopeless: need > 40 };
+  }
+
+  function renderDashboard(entries, t, isToday, blunt) {
+    if (!entries.length) return "";
+    const { score, parts, hasN } = dayScore(entries, t);
+    const pos = score > 0;
+    const head = pos
+      ? (blunt ? "In the green. Keep it there." : "A positive day so far.")
+      : (blunt ? "You're in the red." : "Below zero today.");
+    const plan = toPositive(score, t, hasN, blunt);
+    const planHTML = !pos ? `
+      <div class="plan">
+        <h4>${isToday ? `Get back to positive · ${plan.need} point${plan.need > 1 ? "s" : ""} needed` : "What would have fixed it"}</h4>
+        ${plan.hopeless && isToday ? `<p class="hint" style="margin:0">${blunt ? "Today's hard to save. Make tomorrow's breakfast whole food and start in the green." : "That's a lot to make up today. Start tomorrow with a whole-food breakfast."}</p>` : ""}
+        <ul class="moves">${plan.moves.map(m => `<li><span class="pts pos">+${m.pts}</span>${esc(m.text)}</li>`).join("")}</ul>
+        <ul class="stops">${plan.stops.map(s => `<li>${esc(s)}</li>`).join("")}</ul>
+      </div>` : `<p class="hint" style="margin:0">${blunt ? "Each whole food adds +8. Each ultra-processed one costs −10." : "Whole foods add 8 points each; ultra-processed foods take away 10."}</p>`;
+    // Body: what's happening now (today, recent entries) or what that day asked of it.
+    const nowMin = e => (Date.now() - (e.at || 0)) / 60000;
+    const live = isToday ? entries.flatMap(e => bodyEffects(e.n, e.tier).filter(fx => nowMin(e) <= fx.until).map(fx => ({ fx, e, m: nowMin(e) }))) : [];
+    const seen = new Set();
+    const liveUniq = live.sort((a, b) => (b.fx.bad - a.fx.bad) || (a.m - b.m)).filter(x => !seen.has(x.fx.key) && seen.add(x.fx.key)).slice(0, 3);
+    const ago = m => m < 1 ? "just now" : m < 60 ? `${Math.round(m)} min ago` : `${Math.round(m / 6) / 10} h ago`;
+    const dayFx = new Map();
+    for (const e of entries) for (const fx of bodyEffects(e.n, e.tier)) if (!dayFx.has(fx.key)) dayFx.set(fx.key, { fx, e });
+    const body = liveUniq.length
+      ? `<div class="body"><h4>What your body is doing now</h4><ul class="fx">${liveUniq.map(({ fx, e, m }) => `<li class="${fx.bad ? "bad" : "good"}"><b>${esc(fx.title)}</b><span>${esc(fx.now(m))}</span><small>${esc(e.name)} · ${ago(m)}</small></li>`).join("")}</ul></div>`
+      : dayFx.size
+        ? `<div class="body"><h4>${isToday ? "What your body dealt with today" : "What your body dealt with"}</h4><ul class="fx">${[...dayFx.values()].sort((a, b) => b.fx.bad - a.fx.bad).slice(0, 3).map(({ fx, e }) => `<li class="${fx.bad ? "bad" : "good"}"><b>${esc(fx.title)}</b><span>${esc(fx.text)}</span><small>from ${esc(e.name)}</small></li>`).join("")}</ul></div>`
+        : "";
+    return `
+      <div class="dash ${pos ? "up" : "down"}">
+        <div class="dash-top">
+          <div class="dash-score">${score > 0 ? "+" : score < 0 ? "−" : ""}${Math.abs(score)}</div>
+          <div><span class="eyebrow">${isToday ? "Today's score" : "Day score"}</span><p class="dash-head">${head}</p></div>
+        </div>
+        ${planHTML}
+        ${body}
+        <details class="opt"><summary>Why this score</summary>
+          <ul class="parts">${parts.map(p => `<li><span class="pts ${p.pts > 0 ? "pos" : "neg"}">${p.pts > 0 ? "+" : "−"}${Math.abs(p.pts)}</span>${esc(p.label)}</li>`).join("")}</ul>
+          <p class="hint">Whole foods +8, whole-food mixes +6, kitchen-made +2, processed −4, ultra-processed −10. Up to +15 for fibre and +10 for protein. Points off for going over your sugar, sodium, saturated fat or energy limits.</p>
+        </details>
+      </div>`;
+  }
+
   function renderLog() {
     const today = dayKey(Date.now());
     $("day-title").textContent = dayLabel(viewDay);
@@ -1713,6 +1863,7 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
     el.className = "today" + (minutes ? " bad" : "");
     el.style.setProperty("--tier", `var(--t${minutes ? 5 : worst <= 2 ? 1 : worst})`);
     el.innerHTML = `
+      ${renderDashboard(entries, t, isToday, blunt)}
       <div class="cost">
         <span class="eyebrow">${blunt ? "Life lost" : "Ultra-processed share"}${LOG.mode === "local" ? " · saved on this device only" : ""}</span>
         ${blunt
@@ -1723,6 +1874,8 @@ Reply with only JSON: {"items": [{"name": "short food name", "grams": number eat
       ${shareBar}${overLine}${bars}${list}`;
     renderWeek();
   }
+  // Body effects are timed from when you ate, so refresh the log once a minute while it's open.
+  setInterval(() => { if (LOG.ready && !$("view-log").hidden && !document.hidden) renderLog(); }, 60000);
   $("today").addEventListener("click", e => { const b = e.target.closest("[data-del]"); if (b) removeEntry(viewDay, b.dataset.del); });
 
   function renderWeek() {
